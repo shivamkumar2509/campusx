@@ -50,11 +50,11 @@ campusx/
 
 ## 👥 Team
 
-- **Shivam Kumar** ([@shivamkumar2509](https://github.com/shivamkumar2509) — Leader
-- **Aman Tripathi** ([@amantripathIIITV](https://github.com/amantripathIIITV)
-- **Aniket Kumar** ([@aniket-1370](https://github.com/aniket-1370)
-- **Raghav Soni** ([@raghavsoni341-web](https://github.com/raghavsoni341-web)
-- **Nikhil Singh Tomar** ([@nikhilsinghtomar539-rgb](https://github.com/nikhilsinghtomar539-rgb)
+- **Shivam Kumar** ([@shivamkumar2509](https://github.com/shivamkumar2509)) — Leader
+- **Aman Tripathi** ([@amantripathIIITV](https://github.com/amantripathIIITV))
+- **Aniket Kumar** ([@aniket-1370](https://github.com/aniket-1370))
+- **Raghav Soni** ([@raghavsoni341-web](https://github.com/raghavsoni341-web))
+- **Nikhil Singh Tomar** ([@nikhilsinghtomar539-rgb](https://github.com/nikhilsinghtomar539-rgb))
 
 ## 🚀 Getting Started
 
