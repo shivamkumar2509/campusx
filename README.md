@@ -39,12 +39,14 @@ CampusX helps college students form teams for hackathons, clubs, and events usin
 
 ## 📁 Project Structure
 
+```
 campusx/
-├── frontend/ # Vite + React frontend
-├── backend/ # Express backend
-├── docs/ # Documentation
+├── frontend/          # Vite + React frontend
+├── backend/           # Express backend
+├── docs/              # Documentation
 ├── .gitignore
 └── README.md
+```
 
 ## 👥 Team
 
