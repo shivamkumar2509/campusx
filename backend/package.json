@@ -1,19 +1,12 @@
 {
-  "name": "campusX-backend",
+  "name": "backend",
   "version": "1.0.0",
-  "description": "Backend API for CampusX",
-  "main": "src/server.js",
+  "description": "campusX backend folder",
+  "license": "ISC",
+  "author": "Shivam_Kumar",
   "type": "commonjs",
+  "main": "server.js",
   "scripts": {
-    "start": "node src/server.js",
-    "dev": "nodemon src/server.js"
-  },
-  "keywords": [
-    "campusx",
-    "api",
-    "express",
-    "mongodb"
-  ],
-  "author": "Shivam Kumar",
-  "license": "ISC"
+    "test": "echo \"Error: no test specified\" && exit 1"
+  }
 }
