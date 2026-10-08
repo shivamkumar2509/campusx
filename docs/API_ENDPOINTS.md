@@ -2,7 +2,7 @@
 
 **Base URL:** `/api`
 **Auth:** Bearer JWT in `Authorization` header (except public routes)
-**Total Endpoints:** 106
+**Total Endpoints:** 107
 
 ---
 
@@ -43,17 +43,18 @@
 
 ## 👤 4. Profile & Skills
 
-| #   | Method | Endpoint                    | Purpose           |
-| --- | ------ | --------------------------- | ----------------- |
-| 15  | GET    | `/users/me`                 | Get my profile    |
-| 16  | PATCH  | `/users/me`                 | Update my profile |
-| 17  | GET    | `/users/:userId`            | Get user by ID    |
-| 18  | POST   | `/users/me/github`          | Add GitHub link   |
-| 19  | GET    | `/users/me/skills`          | Get my skills     |
-| 20  | POST   | `/users/me/skills`          | Add a skill       |
-| 21  | PATCH  | `/users/me/skills/:skillId` | Update skill      |
-| 22  | DELETE | `/users/me/skills/:skillId` | Delete skill      |
-| 23  | POST   | `/users/me/skills/verify`   | Verify skills     |
+| #   | Method | Endpoint                    | Purpose                   |
+| --- | ------ | --------------------------- | ------------------------- |
+| 15  | GET    | `/users/me`                 | Get my profile            |
+| 16  | PATCH  | `/users/me`                 | Update my profile         |
+| 17  | POST   | `/users/me/avatar`          | Upload/update profile pic |
+| 18  | GET    | `/users/:userId`            | Get user by ID            |
+| 19  | POST   | `/users/me/github`          | Add GitHub link           |
+| 20  | GET    | `/users/me/skills`          | Get my skills             |
+| 21  | POST   | `/users/me/skills`          | Add a skill               |
+| 22  | PATCH  | `/users/me/skills/:skillId` | Update skill              |
+| 23  | DELETE | `/users/me/skills/:skillId` | Delete skill              |
+| 24  | POST   | `/users/me/skills/verify`   | Verify skills             |
 
 ---
 
@@ -61,13 +62,13 @@
 
 | #   | Method | Endpoint                   | Purpose               |
 | --- | ------ | -------------------------- | --------------------- |
-| 24  | GET    | `/events`                  | List all events       |
-| 25  | POST   | `/events`                  | Create event (admin)  |
-| 26  | GET    | `/events/:eventId`         | Get event details     |
-| 27  | PATCH  | `/events/:eventId`         | Update event (admin)  |
-| 28  | DELETE | `/events/:eventId`         | Delete event (admin)  |
-| 29  | POST   | `/events/:eventId/publish` | Publish event (admin) |
-| 30  | POST   | `/events/:eventId/close`   | Close event (admin)   |
+| 25  | GET    | `/events`                  | List all events       |
+| 26  | POST   | `/events`                  | Create event (admin)  |
+| 27  | GET    | `/events/:eventId`         | Get event details     |
+| 28  | PATCH  | `/events/:eventId`         | Update event (admin)  |
+| 29  | DELETE | `/events/:eventId`         | Delete event (admin)  |
+| 30  | POST   | `/events/:eventId/publish` | Publish event (admin) |
+| 31  | POST   | `/events/:eventId/close`   | Close event (admin)   |
 
 ---
 
@@ -75,9 +76,9 @@
 
 | #   | Method | Endpoint                       | Purpose                  |
 | --- | ------ | ------------------------------ | ------------------------ |
-| 31  | POST   | `/events/:eventId/enroll`      | Raise hand               |
-| 32  | GET    | `/events/:eventId/enrollments` | List enrollments (admin) |
-| 33  | GET    | `/users/me/enrollments`        | My enrollments           |
+| 32  | POST   | `/events/:eventId/enroll`      | Raise hand               |
+| 33  | GET    | `/events/:eventId/enrollments` | List enrollments (admin) |
+| 34  | GET    | `/users/me/enrollments`        | My enrollments           |
 
 ---
 
@@ -85,9 +86,9 @@
 
 | #   | Method | Endpoint                            | Purpose              |
 | --- | ------ | ----------------------------------- | -------------------- |
-| 34  | POST   | `/events/:eventId/matching/run`     | Run matching (admin) |
-| 35  | GET    | `/events/:eventId/suggestions`      | Get suggestions      |
-| 36  | POST   | `/suggestions/:suggestionId/accept` | Accept suggestion    |
+| 35  | POST   | `/events/:eventId/matching/run`     | Run matching (admin) |
+| 36  | GET    | `/events/:eventId/suggestions`      | Get suggestions      |
+| 37  | POST   | `/suggestions/:suggestionId/accept` | Accept suggestion    |
 
 ---
 
@@ -95,12 +96,12 @@
 
 | #   | Method | Endpoint                 | Purpose      |
 | --- | ------ | ------------------------ | ------------ |
-| 37  | POST   | `/teams`                 | Create team  |
-| 38  | GET    | `/teams/:teamId`         | Team details |
-| 39  | PATCH  | `/teams/:teamId`         | Update team  |
-| 40  | GET    | `/teams/:teamId/members` | Team members |
-| 41  | POST   | `/teams/:teamId/confirm` | Confirm team |
-| 42  | GET    | `/users/me/teams`        | My teams     |
+| 38  | POST   | `/teams`                 | Create team  |
+| 39  | GET    | `/teams/:teamId`         | Team details |
+| 40  | PATCH  | `/teams/:teamId`         | Update team  |
+| 41  | GET    | `/teams/:teamId/members` | Team members |
+| 42  | POST   | `/teams/:teamId/confirm` | Confirm team |
+| 43  | GET    | `/users/me/teams`        | My teams     |
 
 ---
 
@@ -108,9 +109,9 @@
 
 | #   | Method | Endpoint                      | Purpose          |
 | --- | ------ | ----------------------------- | ---------------- |
-| 43  | POST   | `/teams/:teamId/leader/vote`  | Vote for leader  |
-| 44  | GET    | `/teams/:teamId/leader/votes` | Get leader votes |
-| 45  | PATCH  | `/teams/:teamId/leader`       | Update leader    |
+| 44  | POST   | `/teams/:teamId/leader/vote`  | Vote for leader  |
+| 45  | GET    | `/teams/:teamId/leader/votes` | Get leader votes |
+| 46  | PATCH  | `/teams/:teamId/leader`       | Update leader    |
 
 ---
 
@@ -118,12 +119,12 @@
 
 | #   | Method | Endpoint                                          | Purpose              |
 | --- | ------ | ------------------------------------------------- | -------------------- |
-| 46  | POST   | `/teams/:teamId/leave-requests`                   | Submit leave request |
-| 47  | GET    | `/teams/:teamId/leave-requests`                   | List leave requests  |
-| 48  | POST   | `/teams/:teamId/leave-requests/:requestId/votes`  | Vote on leave        |
-| 49  | GET    | `/teams/:teamId/leave-requests/:requestId/result` | Voting result        |
-| 50  | DELETE | `/leave-requests/:requestId`                      | Cancel request       |
-| 51  | GET    | `/teams/:teamId/votes`                            | All team votes       |
+| 47  | POST   | `/teams/:teamId/leave-requests`                   | Submit leave request |
+| 48  | GET    | `/teams/:teamId/leave-requests`                   | List leave requests  |
+| 49  | POST   | `/teams/:teamId/leave-requests/:requestId/votes`  | Vote on leave        |
+| 50  | GET    | `/teams/:teamId/leave-requests/:requestId/result` | Voting result        |
+| 51  | DELETE | `/leave-requests/:requestId`                      | Cancel request       |
+| 52  | GET    | `/teams/:teamId/votes`                            | All team votes       |
 
 ---
 
@@ -131,9 +132,9 @@
 
 | #   | Method | Endpoint                                           | Purpose        |
 | --- | ------ | -------------------------------------------------- | -------------- |
-| 52  | GET    | `/teams/:teamId/replacements`                      | AI suggestions |
-| 53  | POST   | `/teams/:teamId/replacements/:suggestionId/invite` | Send invite    |
-| 54  | POST   | `/teams/:teamId/find-replacement`                  | Trigger search |
+| 53  | GET    | `/teams/:teamId/replacements`                      | AI suggestions |
+| 54  | POST   | `/teams/:teamId/replacements/:suggestionId/invite` | Send invite    |
+| 55  | POST   | `/teams/:teamId/find-replacement`                  | Trigger search |
 
 ---
 
@@ -141,10 +142,10 @@
 
 | #   | Method | Endpoint                                           | Purpose                |
 | --- | ------ | -------------------------------------------------- | ---------------------- |
-| 55  | POST   | `/teams/:teamId/invitations`                       | Invite registered user |
-| 56  | POST   | `/teams/:teamId/invitations/:invitationId/respond` | Accept/reject          |
-| 57  | POST   | `/teams/:teamId/external-invitations`              | Invite external user   |
-| 58  | POST   | `/external-invitations/:token/signup`              | External signup        |
+| 56  | POST   | `/teams/:teamId/invitations`                       | Invite registered user |
+| 57  | POST   | `/teams/:teamId/invitations/:invitationId/respond` | Accept/reject          |
+| 58  | POST   | `/teams/:teamId/external-invitations`              | Invite external user   |
+| 59  | POST   | `/external-invitations/:token/signup`              | External signup        |
 
 ---
 
@@ -152,10 +153,10 @@
 
 | #   | Method | Endpoint                          | Purpose             |
 | --- | ------ | --------------------------------- | ------------------- |
-| 59  | GET    | `/teams/:teamId/conversation`     | Get conversation    |
-| 60  | GET    | `/conversations/:convId/messages` | Get messages        |
-| 61  | POST   | `/conversations/:convId/messages` | Send message        |
-| 62  | PATCH  | `/messages/:messageId`            | Edit/delete message |
+| 60  | GET    | `/teams/:teamId/conversation`     | Get conversation    |
+| 61  | GET    | `/conversations/:convId/messages` | Get messages        |
+| 62  | POST   | `/conversations/:convId/messages` | Send message        |
+| 63  | PATCH  | `/messages/:messageId`            | Edit/delete message |
 
 ---
 
@@ -163,20 +164,20 @@
 
 | #   | Method | Endpoint                     | Purpose     |
 | --- | ------ | ---------------------------- | ----------- |
-| 63  | POST   | `/teams/:teamId/tasks`       | Create task |
-| 64  | GET    | `/teams/:teamId/tasks`       | List tasks  |
-| 65  | PATCH  | `/tasks/:taskId`             | Update task |
-| 66  | DELETE | `/tasks/:taskId`             | Delete task |
-| 67  | POST   | `/tasks/:taskId/assignments` | Assign task |
+| 64  | POST   | `/teams/:teamId/tasks`       | Create task |
+| 65  | GET    | `/teams/:teamId/tasks`       | List tasks  |
+| 66  | PATCH  | `/tasks/:taskId`             | Update task |
+| 67  | DELETE | `/tasks/:taskId`             | Delete task |
+| 68  | POST   | `/tasks/:taskId/assignments` | Assign task |
 
 ---
 
-## 📎 15. Attachments
+## 📎 15. Attachments (Cloudinary)
 
-| #   | Method | Endpoint                           | Purpose           |
-| --- | ------ | ---------------------------------- | ----------------- |
-| 68  | POST   | `/uploads/presign`                 | Get S3 upload URL |
-| 69  | POST   | `/messages/:messageId/attachments` | Attach file       |
+| #   | Method | Endpoint                           | Purpose                         |
+| --- | ------ | ---------------------------------- | ------------------------------- |
+| 69  | POST   | `/uploads/signature`               | Get Cloudinary upload signature |
+| 70  | POST   | `/messages/:messageId/attachments` | Attach file to message          |
 
 ---
 
@@ -184,13 +185,13 @@
 
 | #   | Method | Endpoint                                           | Purpose                       |
 | --- | ------ | -------------------------------------------------- | ----------------------------- |
-| 70  | GET    | `/clubs`                                           | List clubs                    |
-| 71  | POST   | `/clubs`                                           | Create club (admin)           |
-| 72  | GET    | `/clubs/:clubId`                                   | Club details                  |
-| 73  | PATCH  | `/clubs/:clubId`                                   | Update club (admin/secretary) |
-| 74  | DELETE | `/clubs/:clubId`                                   | Soft delete (admin)           |
-| 75  | POST   | `/clubs/:clubId/rename-request`                    | Request rename (secretary)    |
-| 76  | POST   | `/clubs/:clubId/rename-request/:requestId/approve` | Approve rename (admin)        |
+| 71  | GET    | `/clubs`                                           | List clubs                    |
+| 72  | POST   | `/clubs`                                           | Create club (admin)           |
+| 73  | GET    | `/clubs/:clubId`                                   | Club details                  |
+| 74  | PATCH  | `/clubs/:clubId`                                   | Update club (admin/secretary) |
+| 75  | DELETE | `/clubs/:clubId`                                   | Soft delete (admin)           |
+| 76  | POST   | `/clubs/:clubId/rename-request`                    | Request rename (secretary)    |
+| 77  | POST   | `/clubs/:clubId/rename-request/:requestId/approve` | Approve rename (admin)        |
 
 ---
 
@@ -198,9 +199,9 @@
 
 | #   | Method | Endpoint                           | Purpose                   |
 | --- | ------ | ---------------------------------- | ------------------------- |
-| 77  | GET    | `/clubs/:clubId/members`           | List members              |
-| 78  | POST   | `/clubs/:clubId/members`           | Add member (secretary)    |
-| 79  | DELETE | `/clubs/:clubId/members/:memberId` | Remove member (secretary) |
+| 78  | GET    | `/clubs/:clubId/members`           | List members              |
+| 79  | POST   | `/clubs/:clubId/members`           | Add member (secretary)    |
+| 80  | DELETE | `/clubs/:clubId/members/:memberId` | Remove member (secretary) |
 
 ---
 
@@ -208,11 +209,11 @@
 
 | #   | Method | Endpoint                             | Purpose             |
 | --- | ------ | ------------------------------------ | ------------------- |
-| 80  | GET    | `/clubs/:clubId/recruitments`        | List recruitments   |
-| 81  | POST   | `/clubs/:clubId/recruitments`        | Create (secretary)  |
-| 82  | GET    | `/recruitments/:recruitmentId`       | Recruitment details |
-| 83  | PATCH  | `/recruitments/:recruitmentId`       | Update recruitment  |
-| 84  | POST   | `/recruitments/:recruitmentId/close` | Close recruitment   |
+| 81  | GET    | `/clubs/:clubId/recruitments`        | List recruitments   |
+| 82  | POST   | `/clubs/:clubId/recruitments`        | Create (secretary)  |
+| 83  | GET    | `/recruitments/:recruitmentId`       | Recruitment details |
+| 84  | PATCH  | `/recruitments/:recruitmentId`       | Update recruitment  |
+| 85  | POST   | `/recruitments/:recruitmentId/close` | Close recruitment   |
 
 ---
 
@@ -220,11 +221,11 @@
 
 | #   | Method | Endpoint                                    | Purpose              |
 | --- | ------ | ------------------------------------------- | -------------------- |
-| 85  | POST   | `/recruitments/:recruitmentId/applications` | Apply                |
-| 86  | GET    | `/recruitments/:recruitmentId/applications` | List applications    |
-| 87  | POST   | `/applications/:applicationId/verify`       | Verify (core member) |
-| 88  | POST   | `/applications/:applicationId/approve`      | Approve (secretary)  |
-| 89  | POST   | `/applications/:applicationId/reject`       | Reject (secretary)   |
+| 86  | POST   | `/recruitments/:recruitmentId/applications` | Apply                |
+| 87  | GET    | `/recruitments/:recruitmentId/applications` | List applications    |
+| 88  | POST   | `/applications/:applicationId/verify`       | Verify (core member) |
+| 89  | POST   | `/applications/:applicationId/approve`      | Approve (secretary)  |
+| 90  | POST   | `/applications/:applicationId/reject`       | Reject (secretary)   |
 
 ---
 
@@ -232,10 +233,10 @@
 
 | #   | Method | Endpoint                              | Purpose            |
 | --- | ------ | ------------------------------------- | ------------------ |
-| 90  | GET    | `/notifications`                      | List notifications |
-| 91  | PATCH  | `/notifications/:notificationId/read` | Mark as read       |
-| 92  | GET    | `/users/me/notification-preferences`  | Get preferences    |
-| 93  | PATCH  | `/users/me/notification-preferences`  | Update preferences |
+| 91  | GET    | `/notifications`                      | List notifications |
+| 92  | PATCH  | `/notifications/:notificationId/read` | Mark as read       |
+| 93  | GET    | `/users/me/notification-preferences`  | Get preferences    |
+| 94  | PATCH  | `/users/me/notification-preferences`  | Update preferences |
 
 ---
 
@@ -243,8 +244,8 @@
 
 | #   | Method | Endpoint                    | Purpose                |
 | --- | ------ | --------------------------- | ---------------------- |
-| 94  | POST   | `/teams/:teamId/feedback`   | Submit feedback        |
-| 95  | GET    | `/events/:eventId/feedback` | Event feedback (admin) |
+| 95  | POST   | `/teams/:teamId/feedback`   | Submit feedback        |
+| 96  | GET    | `/events/:eventId/feedback` | Event feedback (admin) |
 
 ---
 
@@ -252,10 +253,10 @@
 
 | #   | Method | Endpoint         | Purpose       |
 | --- | ------ | ---------------- | ------------- |
-| 96  | GET    | `/search`        | Global search |
-| 97  | GET    | `/search/events` | Search events |
-| 98  | GET    | `/search/teams`  | Search teams  |
-| 99  | GET    | `/search/clubs`  | Search clubs  |
+| 97  | GET    | `/search`        | Global search |
+| 98  | GET    | `/search/events` | Search events |
+| 99  | GET    | `/search/teams`  | Search teams  |
+| 100 | GET    | `/search/clubs`  | Search clubs  |
 
 ---
 
@@ -263,11 +264,11 @@
 
 | #   | Method | Endpoint                  | Purpose             |
 | --- | ------ | ------------------------- | ------------------- |
-| 100 | GET    | `/admin/analytics`        | Analytics dashboard |
-| 101 | GET    | `/admin/audit-logs`       | Audit logs          |
-| 102 | GET    | `/admin/analytics/export` | Export analytics    |
-| 103 | GET    | `/audit-logs/export`      | Export audit logs   |
-| 104 | GET    | `/analytics/feedback`     | Feedback analytics  |
+| 101 | GET    | `/admin/analytics`        | Analytics dashboard |
+| 102 | GET    | `/admin/audit-logs`       | Audit logs          |
+| 103 | GET    | `/admin/analytics/export` | Export analytics    |
+| 104 | GET    | `/audit-logs/export`      | Export audit logs   |
+| 105 | GET    | `/analytics/feedback`     | Feedback analytics  |
 
 ---
 
@@ -275,8 +276,8 @@
 
 | #   | Method | Endpoint  | Purpose         |
 | --- | ------ | --------- | --------------- |
-| 105 | GET    | `/health` | Service health  |
-| 106 | GET    | `/ready`  | Readiness check |
+| 106 | GET    | `/health` | Service health  |
+| 107 | GET    | `/ready`  | Readiness check |
 
 ---
 
@@ -287,7 +288,7 @@
 | Landing           | 3       |
 | Auth              | 9       |
 | Dashboard         | 2       |
-| Profile & Skills  | 9       |
+| Profile & Skills  | 10      |
 | Events            | 7       |
 | Enrollment        | 3       |
 | AI Matching       | 3       |
@@ -308,7 +309,7 @@
 | Search            | 4       |
 | Admin & Analytics | 5       |
 | Health & System   | 2       |
-| **TOTAL**         | **106** |
+| **TOTAL**         | **107** |
 
 ---
 
@@ -331,6 +332,31 @@
 
 ---
 
+## ☁️ Cloudinary Storage Rules
+
+**Cloudinary use hoga:**
+
+- Profile pic (avatar) → `user.avatar_url` + `user.avatar_public_id`
+- Chat attachments → `attachment.file_url` + `attachment.public_id`
+- Task attachments → same
+- Club audition video → `clubApplication.verification_data.video_url` + `video_public_id`
+
+**Cloudinary use nahi hoga (MongoDB mein plain string):**
+
+- `github_url`, `linkedin_url`, `source_url`, `link`
+
+**Upload Flow:**
+
+1. Frontend → `POST /uploads/signature` → backend signature deta hai
+2. Frontend → Cloudinary direct upload
+3. Cloudinary → `secure_url` + `public_id` return karta hai
+4. Frontend → `POST /users/me/avatar` (ya attachment endpoint) with URLs
+5. Backend → MongoDB mein store
+
+**Access:** Cloudinary account sirf admin (Shivam) ke paas. API secret sirf backend `.env` mein, kabhi frontend/GitHub pe nahi.
+
+---
+
 ## ⚠️ Error Format
 
 ```json
@@ -341,758 +367,827 @@
   "request_id": "req_abc123",
   "timestamp": "2025-10-05T10:00:00Z"
 }
-```
-
-## 📝 Status Codes
-
-| Code | Meaning               | When It Happens                         |
-| ---- | --------------------- | --------------------------------------- |
-| 200  | OK                    | Request successful                      |
-| 201  | Created               | Resource created (signup, event create) |
-| 400  | Bad Request           | Validation failed, missing fields       |
-| 401  | Unauthorized          | Missing or invalid JWT token            |
-| 403  | Forbidden             | User doesn't have permission            |
-| 404  | Not Found             | Resource doesn't exist                  |
-| 409  | Conflict              | Duplicate resource (email exists)       |
-| 422  | Unprocessable Entity  | Business rule violated                  |
-| 429  | Too Many Requests     | Rate limit exceeded                     |
-| 500  | Internal Server Error | Unexpected server error                 |
-| 503  | Service Unavailable   | Dependency down (DB, third-party)       |
-
----
-
-## 🖥️ Pages & Components Mapping
-
+📝 Status Codes
+Code	Meaning	When It Happens
+200	OK	Request successful
+201	Created	Resource created (signup, event create)
+400	Bad Request	Validation failed, missing fields
+401	Unauthorized	Missing or invalid JWT token
+403	Forbidden	User doesn't have permission
+404	Not Found	Resource doesn't exist
+409	Conflict	Duplicate resource (email exists)
+422	Unprocessable Entity	Business rule violated
+429	Too Many Requests	Rate limit exceeded
+500	Internal Server Error	Unexpected server error
+503	Service Unavailable	Dependency down (DB, third-party)
+🖥️ Pages & Components Mapping
 Ye section batata hai — kaunsa page kaunsa endpoint use karta hai.
 
----
+📄 Page 1: Landing Page (/)
+Access: Public (no login)
 
-### 📄 Page 1: Landing Page (`/`)
+Components:
 
-**Access:** Public (no login)
+Hero Section
 
-**Components:**
+Features Grid (8 cards)
 
-- Hero Section
-- Features Grid (8 cards)
-- Stats Bar
-- Upcoming Events (3 cards)
-- Active Clubs (5 cards)
-- Platform Highlights
-- Footer
+Stats Bar
 
-**Endpoints used:**
+Upcoming Events (3 cards)
 
-- `GET /landing/featured-events`
-- `GET /landing/featured-clubs`
-- `GET /landing/stats`
+Active Clubs (5 cards)
 
----
+Platform Highlights
 
-### 📄 Page 2: Login (`/login`)
+Footer
 
-**Access:** Public
+Endpoints used:
 
-**Components:**
+GET /landing/featured-events
 
-- Login Form (email + password)
-- Google OAuth button
-- Forgot Password link
-- Signup link
+GET /landing/featured-clubs
 
-**Endpoints used:**
+GET /landing/stats
 
-- `POST /auth/login`
-- `POST /auth/oauth/google`
+📄 Page 2: Login (/login)
+Access: Public
 
----
+Components:
 
-### 📄 Page 3: Signup (`/signup`)
+Login Form (email + password)
 
-**Access:** Public
+Google OAuth button
 
-**Components:**
+Forgot Password link
 
-- Signup Form (name, email, password, year)
-- Google OAuth button
-- Login link
+Signup link
 
-**Endpoints used:**
+Endpoints used:
 
-- `POST /auth/signup`
-- `POST /auth/oauth/google`
+POST /auth/login
 
----
+POST /auth/oauth/google
 
-### 📄 Page 4: Forgot Password (`/forgot-password`)
+📄 Page 3: Signup (/signup)
+Access: Public
 
-**Access:** Public
+Components:
 
-**Components:**
+Signup Form (name, email, password, year)
 
-- Email input
-- Send Reset Link button
-- Back to Login link
+Google OAuth button
 
-**Endpoints used:**
+Login link
 
-- `POST /auth/forgot-password`
+Endpoints used:
 
----
+POST /auth/signup
 
-### 📄 Page 5: Reset Password (`/reset-password/:token`)
+POST /auth/oauth/google
 
-**Access:** Public (via email link)
+📄 Page 4: Forgot Password (/forgot-password)
+Access: Public
 
-**Components:**
+Components:
 
-- New Password input
-- Confirm Password input
-- Reset button
+Email input
 
-**Endpoints used:**
+Send Reset Link button
 
-- `POST /auth/reset-password`
+Back to Login link
 
----
+Endpoints used:
 
-### 📄 Page 6: Student Dashboard (`/dashboard`)
+POST /auth/forgot-password
 
-**Access:** Protected (student)
+📄 Page 5: Reset Password (/reset-password/:token)
+Access: Public (via email link)
 
-**Components:**
+Components:
 
-- Welcome Header
-- Stats Cards (events, teams, votes, skills)
-- Suggestions Widget
-- Upcoming Events Widget
-- Notifications Widget
-- Quick Actions
+New Password input
 
-**Endpoints used:**
+Confirm Password input
 
-- `GET /dashboard`
-- `GET /dashboard/stats`
-- `GET /notifications`
-- `GET /events/:eventId/suggestions`
+Reset button
 
----
+Endpoints used:
 
-### 📄 Page 7: Profile (`/profile`)
+POST /auth/reset-password
 
-**Access:** Protected
+📄 Page 6: Student Dashboard (/dashboard)
+Access: Protected (student)
 
-**Components:**
+Components:
 
-- Profile Info Card
-- Edit Profile Form
-- GitHub Link Section
-- Skills List
-- Add Skill Form
-- Verification Badges
+Welcome Header
 
-**Endpoints used:**
+Stats Cards (events, teams, votes, skills)
 
-- `GET /users/me`
-- `PATCH /users/me`
-- `POST /users/me/github`
-- `GET /users/me/skills`
-- `POST /users/me/skills`
-- `PATCH /users/me/skills/:skillId`
-- `DELETE /users/me/skills/:skillId`
-- `POST /users/me/skills/verify`
+Suggestions Widget
 
----
+Upcoming Events Widget
 
-### 📄 Page 8: Events List (`/events`)
+Notifications Widget
 
-**Access:** Protected
+Quick Actions
 
-**Components:**
+Endpoints used:
 
-- Search Bar
-- Filter (type, status)
-- Event Cards Grid
-- Enrollment Status Badge
+GET /dashboard
 
-**Endpoints used:**
+GET /dashboard/stats
 
-- `GET /events`
-- `GET /users/me/enrollments`
+GET /notifications
 
----
+GET /events/:eventId/suggestions
 
-### 📄 Page 9: Event Details (`/events/:eventId`)
+📄 Page 7: Profile (/profile)
+Access: Protected
 
-**Access:** Protected
+Components:
 
-**Components:**
+Profile Info Card (with avatar)
 
-- Event Header (title, deadline)
-- Event Description
-- Team Size Info
-- Enrolled Count
-- Raise Hand button
-- Enrolled Users List (admin only)
+Edit Profile Form
 
-**Endpoints used:**
+GitHub Link Section
 
-- `GET /events/:eventId`
-- `POST /events/:eventId/enroll`
-- `GET /events/:eventId/enrollments`
+Skills List
 
----
+Add Skill Form
 
-### 📄 Page 10: AI Suggestions (`/matching`)
+Verification Badges
 
-**Access:** Protected
+Endpoints used:
 
-**Components:**
+GET /users/me
 
-- Suggestions List
-- Suggestion Card (members, score, reasoning)
-- Leader Candidate Badge
-- Accept/Decline buttons
+PATCH /users/me
 
-**Endpoints used:**
+POST /users/me/avatar
 
-- `GET /events/:eventId/suggestions`
-- `POST /suggestions/:suggestionId/accept`
+POST /users/me/github
 
----
+GET /users/me/skills
 
-### 📄 Page 11: Team Dashboard (`/teams/:teamId`)
+POST /users/me/skills
 
-**Access:** Protected (team members)
+PATCH /users/me/skills/:skillId
 
-**Components:**
+DELETE /users/me/skills/:skillId
 
-- Team Header (name, status, event)
-- Members List
-- Tabs: Chat | Tasks | Voting | Leave
-- Recent Activity
+POST /users/me/skills/verify
 
-**Endpoints used:**
+📄 Page 8: Events List (/events)
+Access: Protected
 
-- `GET /teams/:teamId`
-- `GET /teams/:teamId/members`
-- `GET /teams/:teamId/conversation`
-- `GET /teams/:teamId/tasks`
+Components:
 
----
+Search Bar
 
-### 📄 Page 12: Leader Voting (`/teams/:teamId/leader-vote`)
+Filter (type, status)
 
-**Access:** Protected (team members)
+Event Cards Grid
 
-**Components:**
+Enrollment Status Badge
 
-- Candidate Cards
-- Vote buttons
-- Vote Progress Bar
-- Countdown Timer
+Endpoints used:
 
-**Endpoints used:**
+GET /events
 
-- `POST /teams/:teamId/leader/vote`
-- `GET /teams/:teamId/leader/votes`
+GET /users/me/enrollments
 
----
+📄 Page 9: Event Details (/events/:eventId)
+Access: Protected
 
-### 📄 Page 13: Leave Request Voting (`/teams/:teamId/leave-requests/:requestId`)
+Components:
 
-**Access:** Protected (team members)
+Event Header (title, deadline)
 
-**Components:**
+Event Description
 
-- Request Details
-- Voter List (approve/reject)
-- Vote buttons
-- Countdown Timer (48h)
-- Result Display
+Team Size Info
 
-**Endpoints used:**
+Enrolled Count
 
-- `GET /teams/:teamId/leave-requests`
-- `POST /teams/:teamId/leave-requests/:requestId/votes`
-- `GET /teams/:teamId/leave-requests/:requestId/result`
+Raise Hand button
 
----
+Enrolled Users List (admin only)
 
-### 📄 Page 14: Replacement (`/teams/:teamId/replacement`)
+Endpoints used:
 
-**Access:** Protected (leader)
+GET /events/:eventId
 
-**Components:**
+POST /events/:eventId/enroll
 
-- Top 3 AI Candidates
-- Candidate Card (score, role)
-- Invite button
+GET /events/:eventId/enrollments
 
-**Endpoints used:**
+📄 Page 10: AI Suggestions (/matching)
+Access: Protected
 
-- `GET /teams/:teamId/replacements`
-- `POST /teams/:teamId/replacements/:suggestionId/invite`
-- `POST /teams/:teamId/find-replacement`
+Components:
 
----
+Suggestions List
 
-### 📄 Page 15: External Invite (`/teams/:teamId/external-invite`)
+Suggestion Card (members, score, reasoning)
 
-**Access:** Protected (leader only)
+Leader Candidate Badge
 
-**Components:**
+Accept/Decline buttons
 
-- Email Input
-- Name Input
-- Role Selector
-- Message Textarea
-- Send Invite button
+Endpoints used:
 
-**Endpoints used:**
+GET /events/:eventId/suggestions
 
-- `POST /teams/:teamId/external-invitations`
+POST /suggestions/:suggestionId/accept
 
----
+📄 Page 11: Team Dashboard (/teams/:teamId)
+Access: Protected (team members)
 
-### 📄 Page 16: External Signup (`/external-invitations/:token`)
+Components:
 
-**Access:** Public (via invite link)
+Team Header (name, status, event)
 
-**Components:**
+Members List
 
-- Pre-filled Email
-- Name Input
-- Password Input
-- Signup button
+Tabs: Chat | Tasks | Voting | Leave
 
-**Endpoints used:**
+Recent Activity
 
-- `POST /external-invitations/:token/signup`
+Endpoints used:
 
----
+GET /teams/:teamId
 
-### 📄 Page 17: Chat (`/teams/:teamId/chat`)
+GET /teams/:teamId/members
 
-**Access:** Protected (team members)
+GET /teams/:teamId/conversation
 
-**Components:**
+GET /teams/:teamId/tasks
 
-- Conversation Window
-- Message Bubbles
-- Message Input
-- Attach File button
-- Unread Count
+📄 Page 12: Leader Voting (/teams/:teamId/leader-vote)
+Access: Protected (team members)
 
-**Endpoints used:**
+Components:
 
-- `GET /conversations/:convId/messages`
-- `POST /conversations/:convId/messages`
-- `PATCH /messages/:messageId`
-- `POST /uploads/presign`
-- `POST /messages/:messageId/attachments`
+Candidate Cards
 
----
+Vote buttons
 
-### 📄 Page 18: Task Board (`/teams/:teamId/tasks`)
+Vote Progress Bar
 
-**Access:** Protected (team members)
+Countdown Timer
 
-**Components:**
+Endpoints used:
 
-- Kanban Board (Todo | Doing | Done)
-- Task Cards
-- Add Task button
-- Task Modal (create/edit)
-- Assignee Picker
+POST /teams/:teamId/leader/vote
 
-**Endpoints used:**
+GET /teams/:teamId/leader/votes
 
-- `GET /teams/:teamId/tasks`
-- `POST /teams/:teamId/tasks`
-- `PATCH /tasks/:taskId`
-- `DELETE /tasks/:taskId`
-- `POST /tasks/:taskId/assignments`
+📄 Page 13: Leave Request Voting (/teams/:teamId/leave-requests/:requestId)
+Access: Protected (team members)
 
----
+Components:
 
-### 📄 Page 19: Clubs Directory (`/clubs`)
+Request Details
 
-**Access:** Protected
+Voter List (approve/reject)
 
-**Components:**
+Vote buttons
 
-- Search Bar
-- Clubs Grid (5 cards)
-- Club Card (logo, name, member count, type)
+Countdown Timer (48h)
 
-**Endpoints used:**
+Result Display
 
-- `GET /clubs`
+Endpoints used:
 
----
+GET /teams/:teamId/leave-requests
 
-### 📄 Page 20: Club Details (`/clubs/:clubId`)
+POST /teams/:teamId/leave-requests/:requestId/votes
 
-**Access:** Protected
+GET /teams/:teamId/leave-requests/:requestId/result
 
-**Components:**
+📄 Page 14: Replacement (/teams/:teamId/replacement)
+Access: Protected (leader)
 
-- Club Header (logo, name, description)
-- Members List
-- Secretary + Core Members
-- Active Recruitments
-- Club Events
+Components:
 
-**Endpoints used:**
+Top 3 AI Candidates
 
-- `GET /clubs/:clubId`
-- `GET /clubs/:clubId/members`
-- `GET /clubs/:clubId/recruitments`
+Candidate Card (score, role)
 
----
+Invite button
 
-### 📄 Page 21: Recruitment Details (`/recruitments/:recruitmentId`)
+Endpoints used:
 
-**Access:** Protected
+GET /teams/:teamId/replacements
 
-**Components:**
+POST /teams/:teamId/replacements/:suggestionId/invite
 
-- Recruitment Header
-- Requirements
-- Deadline
-- Positions Open
-- Apply button
-- Application Form
+POST /teams/:teamId/find-replacement
 
-**Endpoints used:**
+📄 Page 15: External Invite (/teams/:teamId/external-invite)
+Access: Protected (leader only)
 
-- `GET /recruitments/:recruitmentId`
-- `POST /recruitments/:recruitmentId/applications`
+Components:
 
----
+Email Input
 
-### 📄 Page 22: Club Application Status (`/applications/:applicationId`)
+Name Input
 
-**Access:** Protected (applicant)
+Role Selector
 
-**Components:**
+Message Textarea
 
-- Application Status
-- Verification Stage
-- Feedback / Notes
-- Withdraw button
+Send Invite button
 
-**Endpoints used:**
+Endpoints used:
 
-- `GET /clubs/:clubId/applications` (ya similar)
+POST /teams/:teamId/external-invitations
 
----
+📄 Page 16: External Signup (/external-invitations/:token)
+Access: Public (via invite link)
 
-### 📄 Page 23: Recruitment Verification (Secretary)
+Components:
 
-**Access:** Protected (secretary/core)
+Pre-filled Email
 
-**Components:**
+Name Input
 
-- Applications List
-- Applicant Cards
-- Verify button
-- Approve / Reject buttons
-- Verification Notes
+Password Input
 
-**Endpoints used:**
+Signup button
 
-- `GET /recruitments/:recruitmentId/applications`
-- `POST /applications/:applicationId/verify`
-- `POST /applications/:applicationId/approve`
-- `POST /applications/:applicationId/reject`
+Endpoints used:
 
----
+POST /external-invitations/:token/signup
 
-### 📄 Page 24: Notifications (`/notifications`)
+📄 Page 17: Chat (/teams/:teamId/chat)
+Access: Protected (team members)
 
-**Access:** Protected
+Components:
 
-**Components:**
+Conversation Window
 
-- Notifications List
-- Filter (read/unread)
-- Mark as Read button
-- Preferences link
+Message Bubbles
 
-**Endpoints used:**
+Message Input
 
-- `GET /notifications`
-- `PATCH /notifications/:notificationId/read`
-- `GET /users/me/notification-preferences`
+Attach File button
 
----
+Unread Count
 
-### 📄 Page 25: Notification Preferences (`/settings/notifications`)
+Endpoints used:
 
-**Access:** Protected
+GET /conversations/:convId/messages
 
-**Components:**
+POST /conversations/:convId/messages
 
-- Toggles (email, push, chat, match, deadline, club)
-- Save button
+PATCH /messages/:messageId
 
-**Endpoints used:**
+POST /uploads/signature
 
-- `GET /users/me/notification-preferences`
-- `PATCH /users/me/notification-preferences`
+POST /messages/:messageId/attachments
 
----
+📄 Page 18: Task Board (/teams/:teamId/tasks)
+Access: Protected (team members)
 
-### 📄 Page 26: Feedback (`/teams/:teamId/feedback`)
+Components:
 
-**Access:** Protected (team members)
+Kanban Board (Todo | Doing | Done)
 
-**Components:**
+Task Cards
 
-- Rating Stars (1-5)
-- Comments Textarea
-- Submit button
+Add Task button
 
-**Endpoints used:**
+Task Modal (create/edit)
 
-- `POST /teams/:teamId/feedback`
+Assignee Picker
 
----
+Endpoints used:
 
-### 📄 Page 27: Search Results (`/search`)
+GET /teams/:teamId/tasks
 
-**Access:** Protected
+POST /teams/:teamId/tasks
 
-**Components:**
+PATCH /tasks/:taskId
 
-- Search Bar
-- Filter Tabs (All | Events | Teams | Clubs)
-- Results List
+DELETE /tasks/:taskId
 
-**Endpoints used:**
+POST /tasks/:taskId/assignments
 
-- `GET /search`
-- `GET /search/events`
-- `GET /search/teams`
-- `GET /search/clubs`
+📄 Page 19: Clubs Directory (/clubs)
+Access: Protected
 
----
+Components:
 
-### 📄 Page 28: Admin Dashboard (`/admin/dashboard`)
+Search Bar
 
-**Access:** Protected (admin)
+Clubs Grid (5 cards)
 
-**Components:**
+Club Card (logo, name, member count, type)
 
-- Analytics Stats
-- Charts (participation, skill gaps)
-- Recent Events
-- Recent Users
-- Export button
+Endpoints used:
 
-**Endpoints used:**
+GET /clubs
 
-- `GET /admin/analytics`
-- `GET /admin/audit-logs`
-- `GET /admin/analytics/export`
+📄 Page 20: Club Details (/clubs/:clubId)
+Access: Protected
 
----
+Components:
 
-### 📄 Page 29: Admin — Event Management (`/admin/events`)
+Club Header (logo, name, description)
 
-**Access:** Protected (admin)
+Members List
 
-**Components:**
+Secretary + Core Members
 
-- Events Table
-- Create Event button
-- Edit/Delete actions
-- Publish/Close actions
+Active Recruitments
 
-**Endpoints used:**
+Club Events
 
-- `GET /events`
-- `POST /events`
-- `PATCH /events/:eventId`
-- `DELETE /events/:eventId`
-- `POST /events/:eventId/publish`
-- `POST /events/:eventId/close`
-- `POST /events/:eventId/matching/run`
+Endpoints used:
 
----
+GET /clubs/:clubId
 
-### 📄 Page 30: Admin — Club Management (`/admin/clubs`)
+GET /clubs/:clubId/members
 
-**Access:** Protected (admin)
+GET /clubs/:clubId/recruitments
 
-**Components:**
+📄 Page 21: Recruitment Details (/recruitments/:recruitmentId)
+Access: Protected
 
-- Clubs Table
-- Create Club button
-- Edit/Delete actions
-- Rename Requests
-- Approve/Reject actions
+Components:
 
-**Endpoints used:**
+Recruitment Header
 
-- `GET /clubs`
-- `POST /clubs`
-- `PATCH /clubs/:clubId`
-- `DELETE /clubs/:clubId`
-- `POST /clubs/:clubId/rename-request/:requestId/approve`
+Requirements
 
----
+Deadline
 
-### 📄 Page 31: Admin — Audit Logs (`/admin/audit-logs`)
+Positions Open
 
-**Access:** Protected (admin)
+Apply button
 
-**Components:**
+Application Form
 
-- Logs Table
-- Filters (action, user, date)
-- Export button
+Endpoints used:
 
-**Endpoints used:**
+GET /recruitments/:recruitmentId
 
-- `GET /admin/audit-logs`
-- `GET /audit-logs/export`
+POST /recruitments/:recruitmentId/applications
 
----
+📄 Page 22: Club Application Status (/applications/:applicationId)
+Access: Protected (applicant)
 
-## 📊 Summary Table
+Components:
 
-| #   | Page                     | Access    | Endpoints Used |
-| --- | ------------------------ | --------- | -------------- |
-| 1   | Landing                  | Public    | 3              |
-| 2   | Login                    | Public    | 2              |
-| 3   | Signup                   | Public    | 2              |
-| 4   | Forgot Password          | Public    | 1              |
-| 5   | Reset Password           | Public    | 1              |
-| 6   | Dashboard                | Student   | 4              |
-| 7   | Profile                  | Student   | 8              |
-| 8   | Events List              | Student   | 2              |
-| 9   | Event Details            | Student   | 3              |
-| 10  | AI Suggestions           | Student   | 2              |
-| 11  | Team Dashboard           | Team      | 4              |
-| 12  | Leader Voting            | Team      | 2              |
-| 13  | Leave Voting             | Team      | 3              |
-| 14  | Replacement              | Leader    | 3              |
-| 15  | External Invite          | Leader    | 1              |
-| 16  | External Signup          | Public    | 1              |
-| 17  | Chat                     | Team      | 5              |
-| 18  | Task Board               | Team      | 5              |
-| 19  | Clubs Directory          | Student   | 1              |
-| 20  | Club Details             | Student   | 3              |
-| 21  | Recruitment Details      | Student   | 2              |
-| 22  | Application Status       | Applicant | 1              |
-| 23  | Recruitment Verification | Secretary | 4              |
-| 24  | Notifications            | Student   | 3              |
-| 25  | Notification Prefs       | Student   | 2              |
-| 26  | Feedback                 | Team      | 1              |
-| 27  | Search                   | Student   | 4              |
-| 28  | Admin Dashboard          | Admin     | 3              |
-| 29  | Admin Events             | Admin     | 7              |
-| 30  | Admin Clubs              | Admin     | 5              |
-| 31  | Admin Audit Logs         | Admin     | 2              |
+Application Status
 
-**Total Pages:** 31
+Verification Stage
 
-**Total Unique Endpoints:** 106
+Feedback / Notes
 
----
+Withdraw button
 
-## 🎯 Page Categories
+Endpoints used:
 
-### Public Pages (5):
+GET /clubs/:clubId/applications (ya similar)
 
-- Landing
-- Login
-- Signup
-- Forgot Password
-- Reset Password
-- External Signup
+📄 Page 23: Recruitment Verification (Secretary)
+Access: Protected (secretary/core)
 
-### Student Pages (10):
+Components:
 
-- Dashboard
-- Profile
-- Events List
-- Event Details
-- AI Suggestions
-- Clubs Directory
-- Club Details
-- Recruitment Details
-- Notifications
-- Search
+Applications List
 
-### Team Pages (5):
+Applicant Cards
 
-- Team Dashboard
-- Leader Voting
-- Leave Voting
-- Chat
-- Task Board
-- Feedback
+Verify button
 
-### Leader Pages (2):
+Approve / Reject buttons
 
-- Replacement
-- External Invite
+Verification Notes
 
-### Secretary Pages (1):
+Endpoints used:
 
-- Recruitment Verification
+GET /recruitments/:recruitmentId/applications
 
-### Admin Pages (4):
+POST /applications/:applicationId/verify
 
-- Admin Dashboard
-- Admin Events
-- Admin Clubs
-- Admin Audit Logs
+POST /applications/:applicationId/approve
 
----
+POST /applications/:applicationId/reject
 
-## 📝 Notes
+📄 Page 24: Notifications (/notifications)
+Access: Protected
 
-1. **Landing page** public hai — login nahi chahiye
-2. **External Signup** public hai — invite token se aata hai
-3. **Har page multiple endpoints use karta hai** — ek page ≠ ek endpoint
-4. **Kuch endpoints multiple pages mein use hote hain** — jaise `GET /events`
-5. **Role-based access** — admin, secretary, core member, team member
+Components:
 
----
+Notifications List
 
-## 🔧 Backend-Only / Implicit Endpoints
+Filter (read/unread)
 
+Mark as Read button
+
+Preferences link
+
+Endpoints used:
+
+GET /notifications
+
+PATCH /notifications/:notificationId/read
+
+GET /users/me/notification-preferences
+
+📄 Page 25: Notification Preferences (/settings/notifications)
+Access: Protected
+
+Components:
+
+Toggles (email, push, chat, match, deadline, club)
+
+Save button
+
+Endpoints used:
+
+GET /users/me/notification-preferences
+
+PATCH /users/me/notification-preferences
+
+📄 Page 26: Feedback (/teams/:teamId/feedback)
+Access: Protected (team members)
+
+Components:
+
+Rating Stars (1-5)
+
+Comments Textarea
+
+Submit button
+
+Endpoints used:
+
+POST /teams/:teamId/feedback
+
+📄 Page 27: Search Results (/search)
+Access: Protected
+
+Components:
+
+Search Bar
+
+Filter Tabs (All | Events | Teams | Clubs)
+
+Results List
+
+Endpoints used:
+
+GET /search
+
+GET /search/events
+
+GET /search/teams
+
+GET /search/clubs
+
+📄 Page 28: Admin Dashboard (/admin/dashboard)
+Access: Protected (admin)
+
+Components:
+
+Analytics Stats
+
+Charts (participation, skill gaps)
+
+Recent Events
+
+Recent Users
+
+Export button
+
+Endpoints used:
+
+GET /admin/analytics
+
+GET /admin/audit-logs
+
+GET /admin/analytics/export
+
+📄 Page 29: Admin — Event Management (/admin/events)
+Access: Protected (admin)
+
+Components:
+
+Events Table
+
+Create Event button
+
+Edit/Delete actions
+
+Publish/Close actions
+
+Endpoints used:
+
+GET /events
+
+POST /events
+
+PATCH /events/:eventId
+
+DELETE /events/:eventId
+
+POST /events/:eventId/publish
+
+POST /events/:eventId/close
+
+POST /events/:eventId/matching/run
+
+📄 Page 30: Admin — Club Management (/admin/clubs)
+Access: Protected (admin)
+
+Components:
+
+Clubs Table
+
+Create Club button
+
+Edit/Delete actions
+
+Rename Requests
+
+Approve/Reject actions
+
+Endpoints used:
+
+GET /clubs
+
+POST /clubs
+
+PATCH /clubs/:clubId
+
+DELETE /clubs/:clubId
+
+POST /clubs/:clubId/rename-request/:requestId/approve
+
+📄 Page 31: Admin — Audit Logs (/admin/audit-logs)
+Access: Protected (admin)
+
+Components:
+
+Logs Table
+
+Filters (action, user, date)
+
+Export button
+
+Endpoints used:
+
+GET /admin/audit-logs
+
+GET /audit-logs/export
+
+📊 Summary Table
+#	Page	Access	Endpoints Used
+1	Landing	Public	3
+2	Login	Public	2
+3	Signup	Public	2
+4	Forgot Password	Public	1
+5	Reset Password	Public	1
+6	Dashboard	Student	4
+7	Profile	Student	9
+8	Events List	Student	2
+9	Event Details	Student	3
+10	AI Suggestions	Student	2
+11	Team Dashboard	Team	4
+12	Leader Voting	Team	2
+13	Leave Voting	Team	3
+14	Replacement	Leader	3
+15	External Invite	Leader	1
+16	External Signup	Public	1
+17	Chat	Team	5
+18	Task Board	Team	5
+19	Clubs Directory	Student	1
+20	Club Details	Student	3
+21	Recruitment Details	Student	2
+22	Application Status	Applicant	1
+23	Recruitment Verification	Secretary	4
+24	Notifications	Student	3
+25	Notification Prefs	Student	2
+26	Feedback	Team	1
+27	Search	Student	4
+28	Admin Dashboard	Admin	3
+29	Admin Events	Admin	7
+30	Admin Clubs	Admin	5
+31	Admin Audit Logs	Admin	2
+Total Pages: 31
+
+Total Unique Endpoints: 107
+
+🎯 Page Categories
+Public Pages (6):
+Landing
+
+Login
+
+Signup
+
+Forgot Password
+
+Reset Password
+
+External Signup
+
+Student Pages (10):
+Dashboard
+
+Profile
+
+Events List
+
+Event Details
+
+AI Suggestions
+
+Clubs Directory
+
+Club Details
+
+Recruitment Details
+
+Notifications
+
+Search
+
+Team Pages (6):
+Team Dashboard
+
+Leader Voting
+
+Leave Voting
+
+Chat
+
+Task Board
+
+Feedback
+
+Leader Pages (2):
+Replacement
+
+External Invite
+
+Secretary Pages (1):
+Recruitment Verification
+
+Admin Pages (4):
+Admin Dashboard
+
+Admin Events
+
+Admin Clubs
+
+Admin Audit Logs
+
+📝 Notes
+Landing page public hai — login nahi chahiye
+
+External Signup public hai — invite token se aata hai
+
+Har page multiple endpoints use karta hai — ek page ≠ ek endpoint
+
+Kuch endpoints multiple pages mein use hote hain — jaise GET /events
+
+Role-based access — admin, secretary, core member, team member
+
+Cloudinary storage — sirf images/videos/avatars ke liye. Baaki URLs MongoDB mein.
+
+🔧 Backend-Only / Implicit Endpoints
 Ye endpoints UI pe directly nahi dikhte, lekin zaroori hain:
 
-| #   | Method | Endpoint                                 | Purpose                             |
-| --- | ------ | ---------------------------------------- | ----------------------------------- |
-| 1   | POST   | `/auth/logout`                           | Logout user                         |
-| 2   | POST   | `/auth/verify-email`                     | Verify email                        |
-| 3   | GET    | `/auth/me`                               | Current user (used globally)        |
-| 4   | GET    | `/users/:userId`                         | View other profiles                 |
-| 5   | POST   | `/teams`                                 | Create team (via suggestion accept) |
-| 6   | PATCH  | `/teams/:teamId`                         | Update team                         |
-| 7   | POST   | `/teams/:teamId/confirm`                 | Confirm team                        |
-| 8   | GET    | `/users/me/teams`                        | My teams list                       |
-| 9   | PATCH  | `/teams/:teamId/leader`                  | Update leader (after voting)        |
-| 10  | DELETE | `/leave-requests/:requestId`             | Cancel leave request                |
-| 11  | GET    | `/teams/:teamId/votes`                   | All team votes                      |
-| 12  | POST   | `/teams/:teamId/invitations`             | Invite registered user              |
-| 13  | POST   | `/teams/:teamId/invitations/:id/respond` | Respond to invite                   |
-| 14  | POST   | `/clubs/:clubId/rename-request`          | Request rename                      |
-| 15  | POST   | `/clubs/:clubId/members`                 | Add member                          |
-| 16  | DELETE | `/clubs/:clubId/members/:memberId`       | Remove member                       |
-| 17  | POST   | `/clubs/:clubId/recruitments`            | Create recruitment                  |
-| 18  | PATCH  | `/recruitments/:recruitmentId`           | Update recruitment                  |
-| 19  | POST   | `/recruitments/:recruitmentId/close`     | Close recruitment                   |
-| 20  | GET    | `/events/:eventId/feedback`              | View event feedback                 |
-| 21  | GET    | `/analytics/feedback`                    | Feedback analytics                  |
-| 22  | GET    | `/health`                                | Service health                      |
-| 23  | GET    | `/ready`                                 | Readiness check                     |
-
-**Note:** Ye endpoints backend mein implemented honge, lekin dedicated page nahi hoga. Ye API clients, admin tools, ya implicit flows mein use honge.
+#	Method	Endpoint	Purpose
+1	POST	/auth/logout	Logout user
+2	POST	/auth/verify-email	Verify email
+3	GET	/auth/me	Current user (used globally)
+4	GET	/users/:userId	View other profiles
+5	POST	/teams	Create team (via suggestion accept)
+6	PATCH	/teams/:teamId	Update team
+7	POST	/teams/:teamId/confirm	Confirm team
+8	GET	/users/me/teams	My teams list
+9	PATCH	/teams/:teamId/leader	Update leader (after voting)
+10	DELETE	/leave-requests/:requestId	Cancel leave request
+11	GET	/teams/:teamId/votes	All team votes
+12	POST	/teams/:teamId/invitations	Invite registered user
+13	POST	/teams/:teamId/invitations/:id/respond	Respond to invite
+14	POST	/clubs/:clubId/rename-request	Request rename
+15	POST	/clubs/:clubId/members	Add member
+16	DELETE	/clubs/:clubId/members/:memberId	Remove member
+17	POST	/clubs/:clubId/recruitments	Create recruitment
+18	PATCH	/recruitments/:recruitmentId	Update recruitment
+19	POST	/recruitments/:recruitmentId/close	Close recruitment
+20	GET	/events/:eventId/feedback	View event feedback
+21	GET	/analytics/feedback	Feedback analytics
+22	GET	/health	Service health
+23	GET	/ready	Readiness check
+```
