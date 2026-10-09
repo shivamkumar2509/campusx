@@ -39,6 +39,10 @@ export default function Profile() {
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
 
+  // ===== TOGGLE HIDE/SHOW LANGUAGE =====
+  const [togglingLanguage, setTogglingLanguage] = useState(null);
+  const [showAllLanguages, setShowAllLanguages] = useState(false);
+
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -219,6 +223,24 @@ export default function Profile() {
       </div>
     );
   }
+
+  // ===== TOGGLE HIDE/SHOW LANGUAGE =====
+  const handleToggleLanguage = async (language) => {
+    setError("");
+    setSuccess("");
+    setTogglingLanguage(language);
+
+    try {
+      const { data } = await api.patch("/users/me/hidden-languages", {
+        language,
+      });
+      setUser(data.data);
+    } catch (err) {
+      setError(err.response?.data?.message || "Failed to update language");
+    } finally {
+      setTogglingLanguage(null);
+    }
+  };
 
   if (!user) return null;
 
@@ -554,21 +576,91 @@ export default function Profile() {
               </div>
             </div>
 
-            {githubData.top_languages?.length > 0 && (
+            {githubData.all_languages?.length > 0 && (
               <div className="mb-6">
-                <p className="text-sm font-semibold text-gray-700 mb-2">
-                  Top Languages
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {githubData.top_languages.map((lang) => (
-                    <span
-                      key={lang}
-                      className="bg-indigo-50 text-indigo-700 text-xs font-medium px-3 py-1 rounded-full"
+                {/* Header */}
+                <div className="flex justify-between items-center mb-3 flex-wrap gap-2">
+                  <div>
+                    <p className="text-sm font-semibold text-gray-700">
+                      Languages ({githubData.all_languages.length})
+                    </p>
+                    <p className="text-xs text-gray-500 mt-0.5">
+                      Click eye icon to hide from visitors
+                    </p>
+                  </div>
+                  {githubData.all_languages.length > 6 && (
+                    <button
+                      onClick={() => setShowAllLanguages(!showAllLanguages)}
+                      className="text-xs text-indigo-600 hover:text-indigo-800 font-medium"
                     >
-                      {lang}
-                    </span>
-                  ))}
+                      {showAllLanguages
+                        ? "Show Less"
+                        : `Show All (${githubData.all_languages.length})`}
+                    </button>
+                  )}
                 </div>
+
+                {/* Language Chips */}
+                <div className="flex flex-wrap gap-2">
+                  {(showAllLanguages
+                    ? githubData.all_languages
+                    : githubData.all_languages.slice(0, 6)
+                  ).map((lang) => {
+                    const isHidden = (
+                      githubData.hidden_languages || []
+                    ).includes(lang);
+                    const isToggling = togglingLanguage === lang;
+
+                    return (
+                      <div
+                        key={lang}
+                        className={`group flex items-center gap-1.5 pl-3 pr-1.5 py-1 rounded-full text-xs font-medium transition border ${
+                          isHidden
+                            ? "bg-gray-100 text-gray-400 border-gray-200 border-dashed"
+                            : "bg-indigo-50 text-indigo-700 border-indigo-100"
+                        }`}
+                      >
+                        <span className={isHidden ? "line-through" : ""}>
+                          {lang}
+                        </span>
+                        <button
+                          onClick={() => handleToggleLanguage(lang)}
+                          disabled={isToggling}
+                          title={
+                            isHidden ? "Show to visitors" : "Hide from visitors"
+                          }
+                          className={`w-5 h-5 rounded-full flex items-center justify-center transition ${
+                            isHidden
+                              ? "hover:bg-gray-200"
+                              : "hover:bg-indigo-100"
+                          } disabled:opacity-50`}
+                        >
+                          {isToggling ? (
+                            <span className="inline-block w-3 h-3 border-2 border-gray-400/30 border-t-gray-600 rounded-full animate-spin"></span>
+                          ) : isHidden ? (
+                            <span className="text-xs">👁️</span>
+                          ) : (
+                            <span className="text-xs">👁️‍🗨️</span>
+                          )}
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Hidden Languages Info */}
+                {(githubData.hidden_languages || []).length > 0 && (
+                  <div className="mt-3 flex items-start gap-2 text-xs text-amber-700 bg-amber-50 rounded-lg px-3 py-2">
+                    <span>⚠️</span>
+                    <span>
+                      {githubData.hidden_languages.length} language
+                      {githubData.hidden_languages.length > 1
+                        ? "s are"
+                        : " is"}{" "}
+                      hidden from visitors
+                    </span>
+                  </div>
+                )}
               </div>
             )}
 

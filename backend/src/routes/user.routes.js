@@ -6,6 +6,7 @@ const {
   updateAvatar,
   linkGithub,
   refreshGithub,
+  toggleHiddenLanguage,
 } = require("../controllers/user.controller");
 const {
   getMySkills,
@@ -20,6 +21,7 @@ router.patch("/me", auth, updateMyProfile);
 router.post("/me/avatar", auth, updateAvatar);
 router.post("/me/github", auth, linkGithub);
 router.post("/me/github/refresh", auth, refreshGithub);
+router.patch("/me/hidden-languages", auth, toggleHiddenLanguage);
 
 // ===== SKILLS =====
 router.get("/me/skills", auth, getMySkills);

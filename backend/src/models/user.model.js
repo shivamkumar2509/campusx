@@ -72,6 +72,8 @@ const userSchema = new mongoose.Schema(
       avatar_url: { type: String },
       bio: { type: String },
       top_languages: { type: [String] },
+      all_languages: { type: [String] },
+      hidden_languages: { type: [String] },
       language_count: { type: Object, default: {} },
       recent_repos: [
         {

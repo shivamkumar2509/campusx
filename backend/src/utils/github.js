@@ -62,16 +62,23 @@ const analyzeRepos = (repos) => {
     });
   });
 
+  // Top 5 (sorted by count)
   const topLanguages = Object.entries(languageCount)
     .sort((a, b) => b[1] - a[1])
     .slice(0, 5)
     .map(([lang]) => lang);
 
+  // Saari languages (sorted by count, no limit)
+  const allLanguages = Object.entries(languageCount)
+    .sort((a, b) => b[1] - a[1])
+    .map(([lang]) => lang);
+
   return {
     public_repos: repos.length,
     top_languages: topLanguages,
+    all_languages: allLanguages, //
     language_count: languageCount,
-    recent_repos: repoList, // all content
+    recent_repos: repoList,
   };
 };
 

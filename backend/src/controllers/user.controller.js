@@ -19,7 +19,6 @@ exports.getMyProfile = async (req, res) => {
       });
     }
 
-    // Get skills count
     const skills_count = await Skill.countDocuments({ user_id: req.user.id });
 
     res.status(200).json({
@@ -27,9 +26,9 @@ exports.getMyProfile = async (req, res) => {
       data: {
         ...user.toObject(),
         skills_count,
-        events_count: 0, // TODO: Event model baad mein
-        teams_count: 0, // TODO: Team model baad mein
-        pending_votes: 0, // TODO: Vote model baad mein
+        events_count: 0,
+        teams_count: 0,
+        pending_votes: 0,
       },
     });
   } catch (err) {
@@ -61,12 +60,10 @@ exports.updateMyProfile = async (req, res) => {
       }
     });
 
-    // If github_username is being updated, fetch GitHub data too
     if (req.body.github_username !== undefined) {
       const githubUsername = req.body.github_username;
 
       if (githubUsername && githubUsername.trim()) {
-        // Fetch GitHub data
         try {
           const githubUser = await fetchGithubUser(githubUsername);
           const repos = await fetchGithubRepos(githubUsername);
@@ -81,6 +78,8 @@ exports.updateMyProfile = async (req, res) => {
             avatar_url: githubUser.avatar_url,
             bio: githubUser.bio,
             top_languages: analyzed.top_languages,
+            all_languages: analyzed.all_languages,
+            hidden_languages: [],
             language_count: analyzed.language_count,
             recent_repos: analyzed.recent_repos,
           };
@@ -93,7 +92,6 @@ exports.updateMyProfile = async (req, res) => {
           });
         }
       } else {
-        // Clear GitHub data if empty string
         updates.github_username = "";
         updates.github_url = "";
         updates.github_data = null;
@@ -168,7 +166,6 @@ exports.linkGithub = async (req, res) => {
       });
     }
 
-    // Fetch GitHub data
     let githubUser, repos, analyzed;
     try {
       githubUser = await fetchGithubUser(github_username);
@@ -182,7 +179,6 @@ exports.linkGithub = async (req, res) => {
       });
     }
 
-    // Update user
     const user = await User.findByIdAndUpdate(
       req.user.id,
       {
@@ -195,6 +191,8 @@ exports.linkGithub = async (req, res) => {
           avatar_url: githubUser.avatar_url,
           bio: githubUser.bio,
           top_languages: analyzed.top_languages,
+          all_languages: analyzed.all_languages,
+          hidden_languages: [],
           language_count: analyzed.language_count,
           recent_repos: analyzed.recent_repos,
         },
@@ -231,7 +229,6 @@ exports.refreshGithub = async (req, res) => {
       });
     }
 
-    // Fresh GitHub data fetch karo
     let githubUser, repos, analyzed;
     try {
       githubUser = await fetchGithubUser(user.github_username);
@@ -245,7 +242,9 @@ exports.refreshGithub = async (req, res) => {
       });
     }
 
-    // MongoDB update karo
+    // Purani hidden languages preserve karo
+    const existingHidden = user.github_data?.hidden_languages || [];
+
     const updatedUser = await User.findByIdAndUpdate(
       req.user.id,
       {
@@ -256,6 +255,8 @@ exports.refreshGithub = async (req, res) => {
           avatar_url: githubUser.avatar_url,
           bio: githubUser.bio,
           top_languages: analyzed.top_languages,
+          all_languages: analyzed.all_languages,
+          hidden_languages: existingHidden,
           language_count: analyzed.language_count,
           recent_repos: analyzed.recent_repos,
         },
@@ -267,6 +268,66 @@ exports.refreshGithub = async (req, res) => {
     res.status(200).json({
       success: true,
       message: "GitHub data refreshed",
+      data: updatedUser,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({
+      success: false,
+      error_code: "SERVER_ERROR",
+      message: "Something went wrong",
+    });
+  }
+};
+
+// PATCH /api/users/me/hidden-languages
+exports.toggleHiddenLanguage = async (req, res) => {
+  try {
+    const { language } = req.body;
+
+    if (!language || !language.trim()) {
+      return res.status(400).json({
+        success: false,
+        error_code: "MISSING_LANGUAGE",
+        message: "language is required",
+      });
+    }
+
+    const user = await User.findById(req.user.id);
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        error_code: "USER_NOT_FOUND",
+        message: "User not found",
+      });
+    }
+
+    const currentHidden = user.github_data?.hidden_languages || [];
+    const langTrimmed = language.trim();
+
+    let updatedHidden;
+    if (currentHidden.includes(langTrimmed)) {
+      updatedHidden = currentHidden.filter((l) => l !== langTrimmed);
+    } else {
+      updatedHidden = [...currentHidden, langTrimmed];
+    }
+
+    const updatedUser = await User.findByIdAndUpdate(
+      req.user.id,
+      {
+        $set: {
+          "github_data.hidden_languages": updatedHidden,
+        },
+      },
+      { new: true },
+    ).select("-password_hash");
+
+    res.status(200).json({
+      success: true,
+      message: currentHidden.includes(langTrimmed)
+        ? "Language visible now"
+        : "Language hidden",
       data: updatedUser,
     });
   } catch (err) {
