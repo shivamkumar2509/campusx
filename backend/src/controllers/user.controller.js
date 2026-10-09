@@ -217,3 +217,64 @@ exports.linkGithub = async (req, res) => {
     });
   }
 };
+
+// POST /api/users/me/github/refresh
+exports.refreshGithub = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+
+    if (!user.github_username) {
+      return res.status(400).json({
+        success: false,
+        error_code: "NO_GITHUB",
+        message: "No GitHub username linked",
+      });
+    }
+
+    // Fresh GitHub data fetch karo
+    let githubUser, repos, analyzed;
+    try {
+      githubUser = await fetchGithubUser(user.github_username);
+      repos = await fetchGithubRepos(user.github_username);
+      analyzed = analyzeRepos(repos);
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        error_code: "GITHUB_FETCH_FAILED",
+        message: err.message,
+      });
+    }
+
+    // MongoDB update karo
+    const updatedUser = await User.findByIdAndUpdate(
+      req.user.id,
+      {
+        github_data: {
+          public_repos: githubUser.public_repos,
+          followers: githubUser.followers,
+          following: githubUser.following,
+          avatar_url: githubUser.avatar_url,
+          bio: githubUser.bio,
+          top_languages: analyzed.top_languages,
+          language_count: analyzed.language_count,
+          recent_repos: analyzed.recent_repos,
+        },
+        github_verified_at: new Date(),
+      },
+      { new: true },
+    ).select("-password_hash");
+
+    res.status(200).json({
+      success: true,
+      message: "GitHub data refreshed",
+      data: updatedUser,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({
+      success: false,
+      error_code: "SERVER_ERROR",
+      message: "Something went wrong",
+    });
+  }
+};

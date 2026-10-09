@@ -31,6 +31,8 @@ export default function Profile() {
   });
   const [savingSkill, setSavingSkill] = useState(false);
 
+  const [refreshing, setRefreshing] = useState(false);
+
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -183,6 +185,22 @@ export default function Profile() {
     );
   }
 
+  // ===== REFRESH GITHUB =====
+  const handleRefreshGithub = async () => {
+    setError("");
+    setSuccess("");
+    setRefreshing(true);
+
+    try {
+      const { data } = await api.post("/users/me/github/refresh");
+      setUser(data.data);
+      setSuccess("GitHub data refreshed successfully!");
+    } catch (err) {
+      setError(err.response?.data?.message || "Failed to refresh GitHub data");
+    } finally {
+      setRefreshing(false);
+    }
+  };
   if (!user) return null;
 
   // Split skills
@@ -457,9 +475,25 @@ export default function Profile() {
         {/* ===== GITHUB ACTIVITY ===== */}
         {user.github_username && githubData.public_repos !== undefined && (
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
-            <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-              🐙 GitHub Activity
-            </h2>
+            <div className="flex justify-between items-center mb-4 flex-wrap gap-3">
+              <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                🐙 GitHub Activity
+              </h2>
+              <button
+                onClick={handleRefreshGithub}
+                disabled={refreshing}
+                className="flex items-center gap-2 bg-gray-100 text-gray-800 px-4 py-2 rounded-lg hover:bg-gray-200 transition text-sm font-medium disabled:opacity-50"
+              >
+                {refreshing ? (
+                  <>
+                    <span className="inline-block w-4 h-4 border-2 border-gray-400/30 border-t-gray-600 rounded-full animate-spin"></span>
+                    Refreshing...
+                  </>
+                ) : (
+                  <>🔄 Refresh</>
+                )}
+              </button>
+            </div>
 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
               <div className="bg-gray-50 rounded-lg p-4 text-center">
