@@ -1,0 +1,212 @@
+/* ===== Container ===== */
+.spinner-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+}
+
+.spinner-fullscreen {
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 14, 26, 0.85);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* ===== Spinner Wrapper ===== */
+.spinner-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ===== Rings ===== */
+.spinner-ring {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  border: 3px solid transparent;
+  border-top-color: #4f8fff;
+  border-radius: 50%;
+  animation: spinRing 1.2s cubic-bezier(0.5, 0, 0.5, 1) infinite;
+}
+
+.spinner-ring:nth-child(1) {
+  animation-delay: -0.45s;
+  border-top-color: #4f8fff;
+}
+
+.spinner-ring:nth-child(2) {
+  animation-delay: -0.3s;
+  border-top-color: #a78bfa;
+  transform: scale(0.85);
+}
+
+.spinner-ring:nth-child(3) {
+  animation-delay: -0.15s;
+  border-top-color: #06b6d4;
+  transform: scale(0.7);
+}
+
+@keyframes spinRing {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* ===== Center Dot ===== */
+.spinner-dot {
+  position: relative;
+  z-index: 2;
+  font-size: 18px;
+  animation: pulseDot 1.5s ease-in-out infinite;
+}
+
+@keyframes pulseDot {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.15);
+    opacity: 0.8;
+  }
+}
+
+/* ===== Sizes ===== */
+.spinner-small .spinner-wrapper {
+  width: 32px;
+  height: 32px;
+}
+
+.spinner-small .spinner-ring {
+  border-width: 2px;
+}
+
+.spinner-small .spinner-dot {
+  font-size: 12px;
+}
+
+.spinner-small .spinner-message {
+  font-size: 12px;
+}
+
+.spinner-medium .spinner-wrapper {
+  width: 56px;
+  height: 56px;
+}
+
+.spinner-medium .spinner-ring {
+  border-width: 3px;
+}
+
+.spinner-medium .spinner-dot {
+  font-size: 20px;
+}
+
+.spinner-large .spinner-wrapper {
+  width: 88px;
+  height: 88px;
+}
+
+.spinner-large .spinner-ring {
+  border-width: 4px;
+}
+
+.spinner-large .spinner-dot {
+  font-size: 32px;
+}
+
+.spinner-large .spinner-message {
+  font-size: 16px;
+}
+
+/* ===== Message ===== */
+.spinner-message {
+  color: #8b96b8;
+  font-size: 14px;
+  font-weight: 500;
+  margin: 0;
+  text-align: center;
+  letter-spacing: 0.3px;
+  animation: pulseMsg 1.5s ease-in-out infinite;
+}
+
+@keyframes pulseMsg {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* ===== Color Variants ===== */
+.spinner-color-primary .spinner-ring:nth-child(1) {
+  border-top-color: #4f8fff;
+}
+.spinner-color-primary .spinner-ring:nth-child(2) {
+  border-top-color: #a78bfa;
+}
+.spinner-color-primary .spinner-ring:nth-child(3) {
+  border-top-color: #06b6d4;
+}
+
+.spinner-color-success .spinner-ring:nth-child(1) {
+  border-top-color: #10b981;
+}
+.spinner-color-success .spinner-ring:nth-child(2) {
+  border-top-color: #34d399;
+}
+.spinner-color-success .spinner-ring:nth-child(3) {
+  border-top-color: #6ee7b7;
+}
+
+.spinner-color-danger .spinner-ring:nth-child(1) {
+  border-top-color: #ef4444;
+}
+.spinner-color-danger .spinner-ring:nth-child(2) {
+  border-top-color: #f87171;
+}
+.spinner-color-danger .spinner-ring:nth-child(3) {
+  border-top-color: #fca5a5;
+}
+
+.spinner-color-white .spinner-ring:nth-child(1) {
+  border-top-color: #ffffff;
+}
+.spinner-color-white .spinner-ring:nth-child(2) {
+  border-top-color: #e8edf9;
+}
+.spinner-color-white .spinner-ring:nth-child(3) {
+  border-top-color: #cbd5e1;
+}
+
+.spinner-color-white .spinner-message {
+  color: #ffffff;
+}
+
+.spinner-color-white .spinner-dot {
+  color: #ffffff;
+}

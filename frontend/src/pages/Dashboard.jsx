@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import api from "../api/axios";
+import LoadingSpinner from "../components/ui/LoadingSpinner";
+import SkeletonLoader from "../components/ui/SkeletonLoader";
 
 export default function Dashboard() {
   const [user, setUser] = useState(null);
@@ -32,10 +34,65 @@ export default function Dashboard() {
     navigate("/", { replace: true });
   };
 
+  // ===== LOADING STATE =====
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="animate-pulse text-gray-500 text-lg">Loading...</div>
+      <div className="min-h-screen bg-gray-50">
+        {/* Navbar Skeleton */}
+        <nav className="bg-white shadow-sm sticky top-0 z-40">
+          <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
+            <div
+              className="skeleton skeleton-text"
+              style={{ width: "120px", height: "28px" }}
+            />
+            <div className="flex items-center gap-6">
+              <div
+                className="skeleton skeleton-text"
+                style={{ width: "60px", height: "20px" }}
+              />
+              <div
+                className="skeleton skeleton-text"
+                style={{ width: "60px", height: "20px" }}
+              />
+              <div
+                className="skeleton skeleton-circle"
+                style={{ width: "36px", height: "36px" }}
+              />
+            </div>
+          </div>
+        </nav>
+
+        {/* Hero Skeleton */}
+        <div className="h-64 bg-gradient-to-r from-indigo-900/20 to-indigo-600/20 flex items-center">
+          <div className="max-w-7xl mx-auto px-6 w-full">
+            <div
+              className="skeleton skeleton-text"
+              style={{ width: "300px", height: "40px", marginBottom: "12px" }}
+            />
+            <div
+              className="skeleton skeleton-text"
+              style={{ width: "400px", height: "20px" }}
+            />
+          </div>
+        </div>
+
+        {/* Stats Skeleton */}
+        <div className="max-w-7xl mx-auto px-6 py-8">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+            {[1, 2, 3, 4].map((i) => (
+              <SkeletonLoader key={i} type="stat-card" />
+            ))}
+          </div>
+
+          {/* Loading Spinner */}
+          <div className="flex justify-center py-12">
+            <LoadingSpinner
+              size="large"
+              message="Loading your dashboard..."
+              color="primary"
+            />
+          </div>
+        </div>
       </div>
     );
   }
@@ -71,7 +128,6 @@ export default function Dashboard() {
               Search
             </Link>
 
-            {/* Notification bell */}
             <Link to="/notifications" className="relative">
               <span className="text-2xl">🔔</span>
               <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
@@ -79,7 +135,6 @@ export default function Dashboard() {
               </span>
             </Link>
 
-            {/* Profile */}
             <Link to="/profile" className="flex items-center gap-2">
               <img
                 src={
@@ -99,7 +154,7 @@ export default function Dashboard() {
         </div>
       </nav>
 
-      {/* ===== HERO / WELCOME with BACKGROUND IMAGE ===== */}
+      {/* ===== HERO / WELCOME ===== */}
       <section
         className="relative h-64 bg-cover bg-center"
         style={{
@@ -120,7 +175,6 @@ export default function Dashboard() {
 
       {/* ===== MAIN CONTENT ===== */}
       <main className="max-w-7xl mx-auto px-6 py-8">
-        {/* Profile incomplete banner */}
         {!user.availability && (
           <div className="mb-6 bg-yellow-50 border-l-4 border-yellow-500 p-4 rounded-lg flex justify-between items-center flex-wrap gap-3">
             <div>
@@ -140,7 +194,7 @@ export default function Dashboard() {
           </div>
         )}
 
-        {/* ===== STATS CARDS ===== */}
+        {/* Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
           <StatCard
             icon="📅"
@@ -168,7 +222,7 @@ export default function Dashboard() {
           />
         </div>
 
-        {/* ===== TEAM SUGGESTIONS ===== */}
+        {/* Suggestions */}
         <section className="mb-8">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-2xl font-bold text-gray-900">
@@ -181,7 +235,6 @@ export default function Dashboard() {
               View all →
             </Link>
           </div>
-
           <div className="grid md:grid-cols-3 gap-4">
             <SuggestionCard
               event="SIH 2025"
@@ -204,7 +257,7 @@ export default function Dashboard() {
           </div>
         </section>
 
-        {/* ===== UPCOMING EVENTS ===== */}
+        {/* Events */}
         <section className="mb-8">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-2xl font-bold text-gray-900">
@@ -217,7 +270,6 @@ export default function Dashboard() {
               View all →
             </Link>
           </div>
-
           <div className="grid md:grid-cols-3 gap-4">
             <EventCard
               title="SIH 2025"
@@ -240,7 +292,7 @@ export default function Dashboard() {
           </div>
         </section>
 
-        {/* ===== RECENT NOTIFICATIONS ===== */}
+        {/* Notifications */}
         <section className="mb-8">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-2xl font-bold text-gray-900">
@@ -253,7 +305,6 @@ export default function Dashboard() {
               View all →
             </Link>
           </div>
-
           <div className="bg-white rounded-xl shadow-sm divide-y">
             <NotificationItem
               icon="👥"
@@ -276,7 +327,7 @@ export default function Dashboard() {
           </div>
         </section>
 
-        {/* ===== QUICK ACTIONS ===== */}
+        {/* Quick Actions */}
         <section className="mb-8">
           <h2 className="text-2xl font-bold text-gray-900 mb-4">
             Quick Actions
@@ -289,7 +340,6 @@ export default function Dashboard() {
           </div>
         </section>
 
-        {/* Logout */}
         <button
           onClick={handleLogout}
           className="bg-red-600 text-white px-6 py-2 rounded-lg hover:bg-red-700 transition"
@@ -298,7 +348,6 @@ export default function Dashboard() {
         </button>
       </main>
 
-      {/* ===== FOOTER ===== */}
       <footer className="mt-16 bg-white border-t py-6 text-center text-gray-500 text-sm">
         © 2026 CampusX · IIIT Vadodara
       </footer>
@@ -307,7 +356,6 @@ export default function Dashboard() {
 }
 
 /* ===== Sub Components ===== */
-
 function StatCard({ icon, label, value, color }) {
   const colors = {
     indigo: "bg-indigo-50 text-indigo-700 border-indigo-100",
