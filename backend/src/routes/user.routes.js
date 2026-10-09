@@ -5,6 +5,7 @@ const {
   updateMyProfile,
   updateAvatar,
   linkGithub,
+  refreshGithub,
 } = require("../controllers/user.controller");
 const {
   getMySkills,
@@ -18,6 +19,7 @@ router.get("/me", auth, getMyProfile);
 router.patch("/me", auth, updateMyProfile);
 router.post("/me/avatar", auth, updateAvatar);
 router.post("/me/github", auth, linkGithub);
+router.post("/me/github/refresh", auth, refreshGithub);
 
 // ===== SKILLS =====
 router.get("/me/skills", auth, getMySkills);
