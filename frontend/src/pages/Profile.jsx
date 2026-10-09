@@ -3,6 +3,8 @@ import { Link, useNavigate } from "react-router-dom";
 import api from "../api/axios";
 import LoadingSpinner from "../components/ui/LoadingSpinner";
 
+const REPOS_PER_PAGE = 6;
+
 export default function Profile() {
   const [user, setUser] = useState(null);
   const [skills, setSkills] = useState([]);
@@ -31,7 +33,11 @@ export default function Profile() {
   });
   const [savingSkill, setSavingSkill] = useState(false);
 
+  // GitHub refresh
   const [refreshing, setRefreshing] = useState(false);
+
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
 
   const navigate = useNavigate();
 
@@ -160,6 +166,35 @@ export default function Profile() {
     }
   };
 
+  // ===== REFRESH GITHUB =====
+  const handleRefreshGithub = async () => {
+    setError("");
+    setSuccess("");
+    setRefreshing(true);
+
+    try {
+      const { data } = await api.post("/users/me/github/refresh");
+      setUser(data.data);
+      setCurrentPage(1); // Reset pagination
+      setSuccess("GitHub data refreshed successfully!");
+    } catch (err) {
+      setError(err.response?.data?.message || "Failed to refresh GitHub data");
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
+  // ===== PAGINATION HELPERS =====
+  const getPaginatedRepos = (repos) => {
+    const startIndex = (currentPage - 1) * REPOS_PER_PAGE;
+    const endIndex = startIndex + REPOS_PER_PAGE;
+    return repos.slice(startIndex, endIndex);
+  };
+
+  const getTotalPages = (totalRepos) => {
+    return Math.ceil(totalRepos / REPOS_PER_PAGE);
+  };
+
   // ===== LOADING STATE =====
   if (loading) {
     return (
@@ -185,22 +220,6 @@ export default function Profile() {
     );
   }
 
-  // ===== REFRESH GITHUB =====
-  const handleRefreshGithub = async () => {
-    setError("");
-    setSuccess("");
-    setRefreshing(true);
-
-    try {
-      const { data } = await api.post("/users/me/github/refresh");
-      setUser(data.data);
-      setSuccess("GitHub data refreshed successfully!");
-    } catch (err) {
-      setError(err.response?.data?.message || "Failed to refresh GitHub data");
-    } finally {
-      setRefreshing(false);
-    }
-  };
   if (!user) return null;
 
   // Split skills
@@ -208,6 +227,11 @@ export default function Profile() {
   const nonTechnicalSkills = skills.filter((s) => !s.is_technical);
 
   const githubData = user.github_data || {};
+  const totalRepos = githubData.recent_repos?.length || 0;
+  const totalPages = getTotalPages(totalRepos);
+  const paginatedRepos = githubData.recent_repos
+    ? getPaginatedRepos(githubData.recent_repos)
+    : [];
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -550,11 +574,19 @@ export default function Profile() {
 
             {githubData.recent_repos?.length > 0 && (
               <div>
-                <p className="text-sm font-semibold text-gray-700 mb-3">
-                  Recent Repositories
-                </p>
+                <div className="flex justify-between items-center mb-3 flex-wrap gap-2">
+                  <p className="text-sm font-semibold text-gray-700">
+                    Repositories ({totalRepos})
+                  </p>
+                  {totalPages > 1 && (
+                    <p className="text-xs text-gray-500">
+                      Page {currentPage} of {totalPages}
+                    </p>
+                  )}
+                </div>
+
                 <div className="grid md:grid-cols-2 gap-3">
-                  {githubData.recent_repos.map((repo) => (
+                  {paginatedRepos.map((repo) => (
                     <a
                       key={repo.name}
                       href={repo.url}
@@ -576,7 +608,7 @@ export default function Profile() {
                         </p>
                       )}
                       <div className="flex items-center gap-2">
-                        {repo.language && (
+                        {repo.language && repo.language !== "Unknown" && (
                           <span className="text-xs bg-gray-100 text-gray-700 px-2 py-0.5 rounded">
                             {repo.language}
                           </span>
@@ -588,6 +620,48 @@ export default function Profile() {
                     </a>
                   ))}
                 </div>
+
+                {/* Pagination Controls */}
+                {totalPages > 1 && (
+                  <div className="flex justify-center items-center gap-2 mt-6">
+                    {/* Prev */}
+                    <button
+                      onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                      disabled={currentPage === 1}
+                      className="px-3 py-1.5 rounded-lg text-sm font-medium border border-gray-200 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition"
+                    >
+                      ← Prev
+                    </button>
+
+                    {/* Page Numbers */}
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+                      (pageNum) => (
+                        <button
+                          key={pageNum}
+                          onClick={() => setCurrentPage(pageNum)}
+                          className={`w-9 h-9 rounded-lg text-sm font-medium transition ${
+                            currentPage === pageNum
+                              ? "bg-indigo-600 text-white"
+                              : "border border-gray-200 text-gray-700 hover:bg-gray-50"
+                          }`}
+                        >
+                          {pageNum}
+                        </button>
+                      ),
+                    )}
+
+                    {/* Next */}
+                    <button
+                      onClick={() =>
+                        setCurrentPage((p) => Math.min(totalPages, p + 1))
+                      }
+                      disabled={currentPage === totalPages}
+                      className="px-3 py-1.5 rounded-lg text-sm font-medium border border-gray-200 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition"
+                    >
+                      Next →
+                    </button>
+                  </div>
+                )}
               </div>
             )}
           </div>

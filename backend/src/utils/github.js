@@ -71,7 +71,7 @@ const analyzeRepos = (repos) => {
     public_repos: repos.length,
     top_languages: topLanguages,
     language_count: languageCount,
-    recent_repos: repoList.slice(0, 6), // Top 6 recent
+    recent_repos: repoList, // all content
   };
 };
 
