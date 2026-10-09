@@ -67,7 +67,23 @@ const userSchema = new mongoose.Schema(
     },
     github_data: {
       public_repos: { type: Number },
+      followers: { type: Number },
+      following: { type: Number },
+      avatar_url: { type: String },
+      bio: { type: String },
       top_languages: { type: [String] },
+      language_count: { type: Object, default: {} },
+      recent_repos: [
+        {
+          name: String,
+          description: String,
+          language: String,
+          stars: Number,
+          forks: Number,
+          url: String,
+          updated_at: Date,
+        },
+      ],
     },
     github_verified_at: {
       type: Date,
@@ -77,7 +93,7 @@ const userSchema = new mongoose.Schema(
 );
 
 // Indexes
-userSchema.index({ email: 1 }, { unique: true });
+// userSchema.index({ email: 1 }, { unique: true });
 userSchema.index({ role: 1 });
 
 module.exports = mongoose.model("User", userSchema);
