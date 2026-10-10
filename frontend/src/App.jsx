@@ -6,6 +6,7 @@ import Dashboard from "./pages/Dashboard";
 import Profile from "./pages/Profile";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Clubs from "./pages/Clubs";
+import ClubDetail from "./pages/ClubDetail";
 
 function App() {
   return (
@@ -35,6 +36,14 @@ function App() {
           element={
             <ProtectedRoute>
               <Clubs />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/clubs/:clubId"
+          element={
+            <ProtectedRoute>
+              <ClubDetail />
             </ProtectedRoute>
           }
         />
