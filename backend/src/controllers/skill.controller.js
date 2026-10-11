@@ -1,5 +1,6 @@
 const Skill = require("../models/skill.model");
 const { isTechnicalSkill } = require("../utils/github");
+const User = require("../models/user.model");
 
 exports.getMySkills = async (req, res) => {
   try {
@@ -43,6 +44,19 @@ exports.addSkill = async (req, res) => {
     const normalized = skill_name.trim().toLowerCase();
     const technical = isTechnicalSkill(normalized);
 
+    // ⚡ Step 1: User ka GitHub data fetch karo
+    const user = await User.findById(req.user.id).select("github_data");
+    const githubData = user?.github_data || {};
+
+    // ⚡ Step 2: Check karo — kya ye skill GitHub pe exist karti hai?
+    const allGithubItems = [
+      ...(githubData.all_languages || []),
+      ...(githubData.detected_frameworks || []),
+    ].map((s) => s.toLowerCase().trim());
+
+    const isGithubVerified = allGithubItems.includes(normalized);
+
+    // ⚡ Step 3: Skill add karo
     const existing = await Skill.findOne({
       user_id: req.user.id,
       skill_name: normalized,
@@ -50,19 +64,30 @@ exports.addSkill = async (req, res) => {
 
     const wasCreated = !existing;
 
+    const updateData = {
+      $set: {
+        proficiency: proficiency || 1,
+        is_technical: technical,
+        source: isGithubVerified ? "github" : "manual",
+      },
+    };
+
+    // Agar GitHub pe verified hai toh wo set karo
+    if (isGithubVerified) {
+      updateData.$set.verified = true;
+      updateData.$set.verified_at = new Date();
+      updateData.$set.source = "github";
+      updateData.$set.source_url = `https://github.com/${user.github_username || ""}`;
+    }
+
+    updateData.$setOnInsert = {
+      user_id: req.user.id,
+      skill_name: normalized,
+    };
+
     const skill = await Skill.findOneAndUpdate(
       { user_id: req.user.id, skill_name: normalized },
-      {
-        $set: {
-          proficiency: proficiency || 1,
-          is_technical: technical,
-        },
-        $setOnInsert: {
-          user_id: req.user.id,
-          skill_name: normalized,
-          source: "manual",
-        },
-      },
+      updateData,
       {
         new: true,
         upsert: true,
@@ -94,7 +119,6 @@ exports.addSkill = async (req, res) => {
     });
   }
 };
-
 exports.updateSkill = async (req, res) => {
   try {
     const { skillId } = req.params;

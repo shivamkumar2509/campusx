@@ -8,31 +8,32 @@ const {
   detectAllFrameworks,
 } = require("../utils/github");
 
-const upsertGithubSkills = async (userId, frameworks) => {
-  if (!frameworks || frameworks.length === 0) return;
+const upsertGithubSkills = async (userId, skills) => {
+  if (!skills || skills.length === 0) return;
 
-  const ops = frameworks.map((name) => {
-    const normalized = name.toLowerCase().trim();
-    return {
-      updateOne: {
-        filter: { user_id: userId, skill_name: normalized },
-        update: {
-          $set: {
-            is_technical: isTechnicalSkill(normalized),
-            verified: true,
-            verified_at: new Date(),
-          },
-          $setOnInsert: {
-            user_id: userId,
-            skill_name: normalized,
-            proficiency: 3,
-            source: "github",
-          },
+  // Duplicate remove karo (case-insensitive)
+  const uniqueSkills = [...new Set(skills.map((s) => s.toLowerCase().trim()))];
+
+  const ops = uniqueSkills.map((normalized) => ({
+    updateOne: {
+      filter: { user_id: userId, skill_name: normalized },
+      update: {
+        $set: {
+          is_technical: isTechnicalSkill(normalized),
+          verified: true,
+          verified_at: new Date(),
+          source: "github",
         },
-        upsert: true,
+        $setOnInsert: {
+          user_id: userId,
+          skill_name: normalized,
+          proficiency: 3,
+          source: "github",
+        },
       },
-    };
-  });
+      upsert: true,
+    },
+  }));
 
   try {
     await Skill.bulkWrite(ops, { ordered: false });
@@ -111,7 +112,10 @@ exports.updateMyProfile = async (req, res) => {
             console.error("Framework detection failed:", err.message);
           }
 
-          await upsertGithubSkills(req.user.id, detected.all_frameworks);
+          await upsertGithubSkills(req.user.id, [
+            ...analyzed.all_languages, // JavaScript, Python, HTML
+            ...detected.all_frameworks, // React, Express, MongoDB
+          ]);
 
           updates.github_username = githubUsername;
           updates.github_url = githubUser.html_url;
@@ -230,7 +234,11 @@ exports.linkGithub = async (req, res) => {
       console.error("Framework detection failed:", err.message);
     }
 
-    await upsertGithubSkills(req.user.id, detected.all_frameworks);
+    // ⚡ Languages + Frameworks dono add karo
+    await upsertGithubSkills(req.user.id, [
+      ...analyzed.all_languages,
+      ...detected.all_frameworks,
+    ]);
 
     const user = await User.findByIdAndUpdate(
       req.user.id,
@@ -270,7 +278,6 @@ exports.linkGithub = async (req, res) => {
     });
   }
 };
-
 exports.refreshGithub = async (req, res) => {
   try {
     const user = await User.findById(req.user.id);
@@ -303,7 +310,10 @@ exports.refreshGithub = async (req, res) => {
       console.error("Framework detection failed:", err.message);
     }
 
-    await upsertGithubSkills(req.user.id, detected.all_frameworks);
+    await upsertGithubSkills(req.user.id, [
+      ...analyzed.all_languages, // JavaScript, Python, HTML
+      ...detected.all_frameworks, // React, Express, MongoDB
+    ]);
 
     const existingHidden = user.github_data?.hidden_languages || [];
 
