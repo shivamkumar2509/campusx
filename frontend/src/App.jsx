@@ -7,6 +7,7 @@ import Profile from "./pages/Profile";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Clubs from "./pages/Clubs";
 import ClubDetail from "./pages/ClubDetail";
+import Recruitment from "./pages/Recruitment";
 
 function App() {
   return (
@@ -44,6 +45,14 @@ function App() {
           element={
             <ProtectedRoute>
               <ClubDetail />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/recruitments/:recruitmentId"
+          element={
+            <ProtectedRoute>
+              <Recruitment />
             </ProtectedRoute>
           }
         />
