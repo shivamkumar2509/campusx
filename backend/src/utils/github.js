@@ -59,7 +59,6 @@ const FRAMEWORK_RULES = [
         express: "Express",
         fastify: "Fastify",
         koa: "Koa",
-        nestjs: "NestJS",
         "@nestjs/core": "NestJS",
         tailwindcss: "Tailwind CSS",
         bootstrap: "Bootstrap",
@@ -70,7 +69,6 @@ const FRAMEWORK_RULES = [
         "@apollo/client": "Apollo GraphQL",
         redux: "Redux",
         zustand: "Zustand",
-        "react-query": "React Query",
         "@tanstack/react-query": "React Query",
         mongoose: "Mongoose",
         prisma: "Prisma",
@@ -79,14 +77,10 @@ const FRAMEWORK_RULES = [
         typeorm: "TypeORM",
         jest: "Jest",
         vitest: "Vitest",
-        mocha: "Mocha",
         cypress: "Cypress",
         playwright: "Playwright",
         webpack: "Webpack",
         vite: "Vite",
-        rollup: "Rollup",
-        eslint: "ESLint",
-        prettier: "Prettier",
         typescript: "TypeScript",
       };
       for (const [dep, tech] of Object.entries(map)) {
@@ -108,17 +102,9 @@ const FRAMEWORK_RULES = [
         "scikit-learn": "scikit-learn",
         tensorflow: "TensorFlow",
         torch: "PyTorch",
-        pytorch: "PyTorch",
         pandas: "pandas",
         numpy: "NumPy",
-        opencv: "OpenCV",
         "opencv-python": "OpenCV",
-        beautifulsoup4: "BeautifulSoup",
-        scrapy: "Scrapy",
-        celery: "Celery",
-        redis: "Redis",
-        sqlalchemy: "SQLAlchemy",
-        pydantic: "Pydantic",
         streamlit: "Streamlit",
         gradio: "Gradio",
       };
@@ -127,112 +113,6 @@ const FRAMEWORK_RULES = [
       }
       return found;
     },
-  },
-  {
-    file: "pyproject.toml",
-    parse: "text",
-    detect: (content) => {
-      const lower = content.toLowerCase();
-      const found = [];
-      if (lower.includes("django")) found.push("Django");
-      if (lower.includes("flask")) found.push("Flask");
-      if (lower.includes("fastapi")) found.push("FastAPI");
-      if (lower.includes("pytorch") || lower.includes("torch"))
-        found.push("PyTorch");
-      return found;
-    },
-  },
-  {
-    file: "pom.xml",
-    parse: "text",
-    detect: (content) => {
-      const lower = content.toLowerCase();
-      const found = [];
-      if (lower.includes("spring-boot")) found.push("Spring Boot");
-      if (lower.includes("spring-web")) found.push("Spring");
-      if (lower.includes("hibernate")) found.push("Hibernate");
-      return found;
-    },
-  },
-  {
-    file: "build.gradle",
-    parse: "text",
-    detect: (content) => {
-      const lower = content.toLowerCase();
-      const found = [];
-      if (lower.includes("spring-boot")) found.push("Spring Boot");
-      if (lower.includes("hibernate")) found.push("Hibernate");
-      if (lower.includes("android")) found.push("Android");
-      return found;
-    },
-  },
-  {
-    file: "go.mod",
-    parse: "text",
-    detect: (content) => {
-      const lower = content.toLowerCase();
-      const found = [];
-      if (lower.includes("gin-gonic")) found.push("Gin");
-      if (lower.includes("echo")) found.push("Echo");
-      if (lower.includes("fiber")) found.push("Fiber");
-      if (lower.includes("gorm.io")) found.push("GORM");
-      return found;
-    },
-  },
-  {
-    file: "Cargo.toml",
-    parse: "text",
-    detect: (content) => {
-      const lower = content.toLowerCase();
-      const found = [];
-      if (lower.includes("actix-web")) found.push("Actix");
-      if (lower.includes("rocket")) found.push("Rocket");
-      if (lower.includes("tokio")) found.push("Tokio");
-      return found;
-    },
-  },
-  {
-    file: "Gemfile",
-    parse: "text",
-    detect: (content) => {
-      const lower = content.toLowerCase();
-      const found = [];
-      if (lower.includes("rails")) found.push("Rails");
-      if (lower.includes("sinatra")) found.push("Sinatra");
-      return found;
-    },
-  },
-  {
-    file: "composer.json",
-    parse: "json",
-    detect: (pkg) => {
-      const deps = {
-        ...(pkg.require || {}),
-        ...(pkg["require-dev"] || {}),
-      };
-      const found = [];
-      if (deps["laravel/framework"]) found.push("Laravel");
-      if (deps["symfony/symfony"]) found.push("Symfony");
-      return found;
-    },
-  },
-  {
-    file: "docker-compose.yml",
-    parse: "text",
-    detect: (content) => {
-      const lower = content.toLowerCase();
-      const found = ["Docker"];
-      if (lower.includes("postgres")) found.push("PostgreSQL");
-      if (lower.includes("mysql")) found.push("MySQL");
-      if (lower.includes("mongo")) found.push("MongoDB");
-      if (lower.includes("redis")) found.push("Redis");
-      return found;
-    },
-  },
-  {
-    file: "Dockerfile",
-    parse: "text",
-    detect: () => ["Docker"],
   },
 ];
 
@@ -283,9 +163,10 @@ const detectAllFrameworks = async (owner, repos) => {
   const allFrameworks = new Set();
   const repoFrameworks = {};
 
-  const reposToScan = repos.slice(0, 20);
+  // Sirf top 5 recently updated repos scan karo
+  const reposToScan = repos.slice(0, 5);
 
-  const CONCURRENCY = 5;
+  const CONCURRENCY = 3;
   for (let i = 0; i < reposToScan.length; i += CONCURRENCY) {
     const batch = reposToScan.slice(i, i + CONCURRENCY);
     const batchResults = await Promise.allSettled(
