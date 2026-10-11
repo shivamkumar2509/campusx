@@ -8,6 +8,7 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import Clubs from "./pages/Clubs";
 import ClubDetail from "./pages/ClubDetail";
 import Recruitment from "./pages/Recruitment";
+import Notifications from "./pages/Notifications";
 
 function App() {
   return (
@@ -53,6 +54,14 @@ function App() {
           element={
             <ProtectedRoute>
               <Recruitment />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/notifications"
+          element={
+            <ProtectedRoute>
+              <Notifications />
             </ProtectedRoute>
           }
         />
