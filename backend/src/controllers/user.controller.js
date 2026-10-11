@@ -4,9 +4,45 @@ const {
   fetchGithubUser,
   fetchGithubRepos,
   analyzeRepos,
+  isTechnicalSkill,
+  detectAllFrameworks,
 } = require("../utils/github");
 
-// GET /api/users/me
+const upsertGithubSkills = async (userId, frameworks) => {
+  if (!frameworks || frameworks.length === 0) return;
+
+  const ops = frameworks.map((name) => {
+    const normalized = name.toLowerCase().trim();
+    return {
+      updateOne: {
+        filter: { user_id: userId, skill_name: normalized },
+        update: {
+          $set: {
+            is_technical: isTechnicalSkill(normalized),
+            verified: true,
+            verified_at: new Date(),
+          },
+          $setOnInsert: {
+            user_id: userId,
+            skill_name: normalized,
+            proficiency: 3,
+            source: "github",
+          },
+        },
+        upsert: true,
+      },
+    };
+  });
+
+  try {
+    await Skill.bulkWrite(ops, { ordered: false });
+  } catch (err) {
+    if (err.code !== 11000) {
+      console.error("BulkWrite skill upsert error:", err.message);
+    }
+  }
+};
+
 exports.getMyProfile = async (req, res) => {
   try {
     const user = await User.findById(req.user.id).select("-password_hash");
@@ -41,7 +77,6 @@ exports.getMyProfile = async (req, res) => {
   }
 };
 
-// PATCH /api/users/me
 exports.updateMyProfile = async (req, res) => {
   try {
     const allowedFields = [
@@ -69,6 +104,15 @@ exports.updateMyProfile = async (req, res) => {
           const repos = await fetchGithubRepos(githubUsername);
           const analyzed = analyzeRepos(repos);
 
+          let detected = { all_frameworks: [], repo_frameworks: {} };
+          try {
+            detected = await detectAllFrameworks(githubUsername, repos);
+          } catch (err) {
+            console.error("Framework detection failed:", err.message);
+          }
+
+          await upsertGithubSkills(req.user.id, detected.all_frameworks);
+
           updates.github_username = githubUsername;
           updates.github_url = githubUser.html_url;
           updates.github_data = {
@@ -82,6 +126,8 @@ exports.updateMyProfile = async (req, res) => {
             hidden_languages: [],
             language_count: analyzed.language_count,
             recent_repos: analyzed.recent_repos,
+            detected_frameworks: detected.all_frameworks,
+            repo_frameworks: detected.repo_frameworks,
           };
           updates.github_verified_at = new Date();
         } catch (err) {
@@ -119,7 +165,6 @@ exports.updateMyProfile = async (req, res) => {
   }
 };
 
-// POST /api/users/me/avatar
 exports.updateAvatar = async (req, res) => {
   try {
     const { avatar_url, avatar_public_id } = req.body;
@@ -153,7 +198,6 @@ exports.updateAvatar = async (req, res) => {
   }
 };
 
-// POST /api/users/me/github
 exports.linkGithub = async (req, res) => {
   try {
     const { github_username } = req.body;
@@ -179,6 +223,15 @@ exports.linkGithub = async (req, res) => {
       });
     }
 
+    let detected = { all_frameworks: [], repo_frameworks: {} };
+    try {
+      detected = await detectAllFrameworks(github_username, repos);
+    } catch (err) {
+      console.error("Framework detection failed:", err.message);
+    }
+
+    await upsertGithubSkills(req.user.id, detected.all_frameworks);
+
     const user = await User.findByIdAndUpdate(
       req.user.id,
       {
@@ -195,6 +248,8 @@ exports.linkGithub = async (req, res) => {
           hidden_languages: [],
           language_count: analyzed.language_count,
           recent_repos: analyzed.recent_repos,
+          detected_frameworks: detected.all_frameworks,
+          repo_frameworks: detected.repo_frameworks,
         },
         github_verified_at: new Date(),
       },
@@ -216,7 +271,6 @@ exports.linkGithub = async (req, res) => {
   }
 };
 
-// POST /api/users/me/github/refresh
 exports.refreshGithub = async (req, res) => {
   try {
     const user = await User.findById(req.user.id);
@@ -242,7 +296,15 @@ exports.refreshGithub = async (req, res) => {
       });
     }
 
-    // Purani hidden languages preserve karo
+    let detected = { all_frameworks: [], repo_frameworks: {} };
+    try {
+      detected = await detectAllFrameworks(user.github_username, repos);
+    } catch (err) {
+      console.error("Framework detection failed:", err.message);
+    }
+
+    await upsertGithubSkills(req.user.id, detected.all_frameworks);
+
     const existingHidden = user.github_data?.hidden_languages || [];
 
     const updatedUser = await User.findByIdAndUpdate(
@@ -259,6 +321,8 @@ exports.refreshGithub = async (req, res) => {
           hidden_languages: existingHidden,
           language_count: analyzed.language_count,
           recent_repos: analyzed.recent_repos,
+          detected_frameworks: detected.all_frameworks,
+          repo_frameworks: detected.repo_frameworks,
         },
         github_verified_at: new Date(),
       },
@@ -280,7 +344,6 @@ exports.refreshGithub = async (req, res) => {
   }
 };
 
-// PATCH /api/users/me/hidden-languages
 exports.toggleHiddenLanguage = async (req, res) => {
   try {
     const { language } = req.body;

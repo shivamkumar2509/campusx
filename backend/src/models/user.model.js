@@ -2,7 +2,6 @@ const mongoose = require("mongoose");
 
 const userSchema = new mongoose.Schema(
   {
-    // ===== REQUIRED (signup pe aayenge) =====
     name: {
       type: String,
       required: true,
@@ -24,7 +23,6 @@ const userSchema = new mongoose.Schema(
       required: true,
     },
 
-    // ===== SYSTEM-MANAGED (default rakho) =====
     role: {
       type: String,
       enum: ["student", "admin"],
@@ -39,7 +37,6 @@ const userSchema = new mongoose.Schema(
       default: false,
     },
 
-    // ===== OPTIONAL (user profile se bharega) =====
     avatar_url: {
       type: String,
     },
@@ -86,6 +83,8 @@ const userSchema = new mongoose.Schema(
           updated_at: Date,
         },
       ],
+      detected_frameworks: { type: [String], default: [] },
+      repo_frameworks: { type: Object, default: {} },
     },
     github_verified_at: {
       type: Date,
@@ -94,8 +93,6 @@ const userSchema = new mongoose.Schema(
   { timestamps: true },
 );
 
-// Indexes
-// userSchema.index({ email: 1 }, { unique: true });
 userSchema.index({ role: 1 });
 
 module.exports = mongoose.model("User", userSchema);

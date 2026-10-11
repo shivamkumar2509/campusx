@@ -11,6 +11,7 @@ const skillSchema = new mongoose.Schema(
       type: String,
       required: true,
       trim: true,
+      lowercase: true,
     },
     proficiency: {
       type: Number,
@@ -47,5 +48,6 @@ skillSchema.index({ user_id: 1 });
 skillSchema.index({ skill_name: 1 });
 skillSchema.index({ verified: 1 });
 skillSchema.index({ is_technical: 1 });
+skillSchema.index({ user_id: 1, skill_name: 1 }, { unique: true });
 
 module.exports = mongoose.model("Skill", skillSchema);
