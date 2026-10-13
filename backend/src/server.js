@@ -21,6 +21,7 @@ app.use("/api", require("./routes/clubBrowse.routes"));
 app.use("/api", require("./routes/recruitmentView.routes"));
 app.use("/api", require("./routes/notificationFeed.routes"));
 app.use("/api", require("./routes/search.routes"));
+app.use("/api", require("./routes/team.routes"));
 
 // Health
 app.get("/api/health", (req, res) => res.json({ status: "ok" }));

@@ -74,6 +74,22 @@ function App() {
             </ProtectedRoute>
           }
         />
+        <Route
+          path="/teams/:teamId"
+          element={
+            <ProtectedRoute>
+              <TeamDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/teams/:teamId/voting/:requestId"
+          element={
+            <ProtectedRoute>
+              <Voting />
+            </ProtectedRoute>
+          }
+        />
       </Routes>
     </BrowserRouter>
   );
