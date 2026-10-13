@@ -74,7 +74,7 @@ function App() {
             </ProtectedRoute>
           }
         />
-        <Route
+        {/* <Route
           path="/teams/:teamId"
           element={
             <ProtectedRoute>
@@ -89,7 +89,7 @@ function App() {
               <Voting />
             </ProtectedRoute>
           }
-        />
+        /> */}
       </Routes>
     </BrowserRouter>
   );
