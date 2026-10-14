@@ -577,11 +577,7 @@ export default function Profile() {
                       </select>
                     </Field>
 
-                    <Field
-                      label="GitHub username"
-                      id="pf-gh"
-                      hint="Save karne pe GitHub data fetch hoga"
-                    >
+                    <Field label="GitHub username" id="pf-gh">
                       <input
                         id="pf-gh"
                         type="text"
