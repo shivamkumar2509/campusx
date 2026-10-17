@@ -22,6 +22,19 @@ const userSchema = new mongoose.Schema(
       type: Number,
       required: true,
     },
+    batch: {
+      type: Number,
+      default: null,
+    },
+    status: {
+      type: String,
+      enum: ["pending_approval", "active", "suspended"],
+      default: "active",
+    },
+    must_change_password: {
+      type: Boolean,
+      default: false,
+    },
 
     role: {
       type: String,
@@ -94,5 +107,8 @@ const userSchema = new mongoose.Schema(
 );
 
 userSchema.index({ role: 1 });
+userSchema.index({ status: 1 });
+userSchema.index({ year: 1 });
+userSchema.index({ batch: 1 });
 
 module.exports = mongoose.model("User", userSchema);

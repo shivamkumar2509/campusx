@@ -5,22 +5,34 @@ import api from "../api/axios";
 export default function Login() {
   const [form, setForm] = useState({ email: "", password: "" });
   const [error, setError] = useState("");
+  const [errorCode, setErrorCode] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
+    setErrorCode("");
     setLoading(true);
     try {
       const { data } = await api.post("/auth/login", form);
-      localStorage.setItem("token", data.data.token);
-      localStorage.setItem("user", JSON.stringify(data.data.user));
-      navigate(
-        data.data.user.role === "admin" ? "/admin/dashboard" : "/dashboard",
-      );
+      const { token, user } = data.data;
+
+      localStorage.setItem("token", token);
+      localStorage.setItem("user", JSON.stringify(user));
+
+      // Force password change on first login (admin-created accounts)
+      if (user.must_change_password) {
+        navigate("/change-password", { replace: true });
+        return;
+      }
+
+      navigate(user.role === "admin" ? "/admin/dashboard" : "/dashboard");
     } catch (err) {
-      setError(err.response?.data?.message || "Login failed");
+      const code = err.response?.data?.error_code || "";
+      const message = err.response?.data?.message || "Login failed";
+      setErrorCode(code);
+      setError(message);
     } finally {
       setLoading(false);
     }
@@ -32,7 +44,17 @@ export default function Login() {
         <h2 className="text-2xl font-bold text-center mb-6">Welcome Back</h2>
 
         {error && (
-          <div className="bg-red-50 text-red-600 p-3 rounded mb-4 text-sm">
+          <div
+            className={`p-3 rounded mb-4 text-sm ${
+              errorCode === "ACCOUNT_PENDING_APPROVAL"
+                ? "bg-yellow-50 text-yellow-800 border border-yellow-200"
+                : errorCode === "ACCOUNT_SUSPENDED"
+                  ? "bg-red-50 text-red-800 border border-red-200"
+                  : "bg-red-50 text-red-600"
+            }`}
+          >
+            {errorCode === "ACCOUNT_PENDING_APPROVAL" && "⏳ "}
+            {errorCode === "ACCOUNT_SUSPENDED" && "🚫 "}
             {error}
           </div>
         )}

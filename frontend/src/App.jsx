@@ -10,6 +10,9 @@ import ClubDetail from "./pages/ClubDetail";
 import Recruitment from "./pages/Recruitment";
 import Notifications from "./pages/Notifications";
 import Search from "./pages/Search";
+import Chat from "./pages/Chat";
+import ChangePassword from "./pages/ChangePassword";
+import AdminDashboard from "./pages/AdminDashboard";
 
 function App() {
   return (
@@ -18,6 +21,16 @@ function App() {
         <Route path="/" element={<Landing />} />
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
+
+        <Route
+          path="/change-password"
+          element={
+            <ProtectedRoute>
+              <ChangePassword />
+            </ProtectedRoute>
+          }
+        />
+
         <Route
           path="/dashboard"
           element={
@@ -74,22 +87,22 @@ function App() {
             </ProtectedRoute>
           }
         />
-        {/* <Route
-          path="/teams/:teamId"
+        <Route
+          path="/teams/:teamId/chat"
           element={
             <ProtectedRoute>
-              <TeamDashboard />
+              <Chat />
             </ProtectedRoute>
           }
         />
         <Route
-          path="/teams/:teamId/voting/:requestId"
+          path="/admin/dashboard"
           element={
             <ProtectedRoute>
-              <Voting />
+              <AdminDashboard />
             </ProtectedRoute>
           }
-        /> */}
+        />
       </Routes>
     </BrowserRouter>
   );
