@@ -1,5 +1,9 @@
 const User = require("../models/user.model");
 const Skill = require("../models/skill.model");
+const Enrollment = require("../models/enrollment.model");
+const Team = require("../models/team.model");
+const TeamMember = require("../models/teamMember.model");
+const TeamChangeRequest = require("../models/teamChangeRequest.model");
 const {
   fetchGithubUser,
   fetchGithubRepos,
@@ -56,16 +60,55 @@ exports.getMyProfile = async (req, res) => {
       });
     }
 
-    const skills_count = await Skill.countDocuments({ user_id: req.user.id });
+    // Real counts in parallel
+    const [skills_count, events_count, teams_count, pending_votes] =
+      await Promise.all([
+        Skill.countDocuments({ user_id: req.user.id }),
+
+        // Events = enrollments raised (status pending or matched)
+        Enrollment.countDocuments({
+          user_id: req.user.id,
+          status: { $in: ["pending", "matched"] },
+        }),
+
+        // Teams = accepted memberships
+        TeamMember.countDocuments({
+          user_id: req.user.id,
+          status: "accepted",
+        }),
+
+        // Pending votes = open leave requests on teams this user is in,
+        // that this user has not yet approved/rejected
+        (async () => {
+          const myTeams = await TeamMember.find({
+            user_id: req.user.id,
+            status: "accepted",
+          })
+            .select("team_id")
+            .lean();
+
+          if (myTeams.length === 0) return 0;
+
+          const teamIds = myTeams.map((m) => m.team_id);
+
+          return TeamChangeRequest.countDocuments({
+            team_id: { $in: teamIds },
+            status: "pending",
+            expires_at: { $gt: new Date() },
+            approvals: { $ne: req.user.id },
+            rejections: { $ne: req.user.id },
+          });
+        })(),
+      ]);
 
     res.status(200).json({
       success: true,
       data: {
         ...user.toObject(),
         skills_count,
-        events_count: 0,
-        teams_count: 0,
-        pending_votes: 0,
+        events_count,
+        teams_count,
+        pending_votes,
       },
     });
   } catch (err) {
@@ -113,8 +156,8 @@ exports.updateMyProfile = async (req, res) => {
           }
 
           await upsertGithubSkills(req.user.id, [
-            ...analyzed.all_languages, // JavaScript, Python, HTML
-            ...detected.all_frameworks, // React, Express, MongoDB
+            ...analyzed.all_languages,
+            ...detected.all_frameworks,
           ]);
 
           updates.github_username = githubUsername;
@@ -278,6 +321,7 @@ exports.linkGithub = async (req, res) => {
     });
   }
 };
+
 exports.refreshGithub = async (req, res) => {
   try {
     const user = await User.findById(req.user.id);
@@ -311,8 +355,8 @@ exports.refreshGithub = async (req, res) => {
     }
 
     await upsertGithubSkills(req.user.id, [
-      ...analyzed.all_languages, // JavaScript, Python, HTML
-      ...detected.all_frameworks, // React, Express, MongoDB
+      ...analyzed.all_languages,
+      ...detected.all_frameworks,
     ]);
 
     const existingHidden = user.github_data?.hidden_languages || [];

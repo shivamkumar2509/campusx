@@ -3,52 +3,49 @@ import { Link } from "react-router-dom";
 import api from "../api/axios";
 
 export default function Landing() {
-  const [stats, setStats] = useState({
-    users: 1200,
-    teams: 340,
-    clubs: 5,
-  });
+  const [stats, setStats] = useState(null); // null = loading
   const [events, setEvents] = useState([]);
   const [clubs, setClubs] = useState([]);
 
   useEffect(() => {
-    // Ye endpoints baad mein banayenge, abhi fallback data
+    let cancelled = false;
+
+    // Stats — silent failure returns zeros so sections still render
     api
       .get("/landing/stats")
-      .then(({ data }) => setStats(data.data))
-      .catch(() => {});
+      .then(({ data }) => {
+        if (!cancelled) setStats(data.data || { users: 0, teams: 0, clubs: 0 });
+      })
+      .catch(() => {
+        if (!cancelled) setStats({ users: 0, teams: 0, clubs: 0 });
+      });
+
+    // Featured events — empty array if none
     api
       .get("/landing/featured-events")
-      .then(({ data }) => setEvents(data.data))
-      .catch(() => {});
+      .then(({ data }) => {
+        if (!cancelled) setEvents(Array.isArray(data.data) ? data.data : []);
+      })
+      .catch(() => {
+        if (!cancelled) setEvents([]);
+      });
+
+    // Featured clubs — empty array if none
     api
       .get("/landing/featured-clubs")
-      .then(({ data }) => setClubs(data.data))
-      .catch(() => {});
+      .then(({ data }) => {
+        if (!cancelled) setClubs(Array.isArray(data.data) ? data.data : []);
+      })
+      .catch(() => {
+        if (!cancelled) setClubs([]);
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
-  // Fallback data (jab tak backend endpoints nahi bane)
-  const fallbackEvents = [
-    { _id: "1", title: "SIH 2025", type: "hackathon", deadline: "Oct 30" },
-    {
-      _id: "2",
-      title: "KrievaXAlfaz Auditions",
-      type: "club",
-      deadline: "Oct 5",
-    },
-    { _id: "3", title: "ML Workshop", type: "workshop", deadline: "Nov 12" },
-  ];
-
-  const fallbackClubs = [
-    { _id: "1", name: "KrievaX", type: "music", member_count: 45 },
-    { _id: "2", name: "CodeX", type: "coding", member_count: 78 },
-    { _id: "3", name: "Robotics", type: "robotics", member_count: 34 },
-    { _id: "4", name: "Dance Club", type: "dance", member_count: 52 },
-    { _id: "5", name: "Drama Society", type: "drama", member_count: 38 },
-  ];
-
-  const featuredEvents = events.length ? events : fallbackEvents;
-  const featuredClubs = clubs.length ? clubs : fallbackClubs;
+  const displayStats = stats || { users: 0, teams: 0, clubs: 0 };
 
   return (
     <div className="min-h-screen bg-white text-gray-900">
@@ -91,17 +88,14 @@ export default function Landing() {
         </div>
       </nav>
 
-      {/* ============ HERO with BACKGROUND IMAGE ============ */}
+      {/* ============ HERO ============ */}
       <section className="relative pt-16 min-h-screen flex items-center">
-        {/* Background image */}
         <div
           className="absolute inset-0 bg-cover bg-center"
           style={{ backgroundImage: "url('/campus-bg.png')" }}
         />
-        {/* Dark overlay */}
         <div className="absolute inset-0 bg-gradient-to-r from-indigo-950/90 via-indigo-900/75 to-indigo-800/50" />
 
-        {/* Content */}
         <div className="relative max-w-7xl mx-auto px-6 py-24 grid md:grid-cols-2 gap-12 items-center">
           <div className="text-white">
             <span className="inline-block bg-white/10 backdrop-blur border border-white/20 text-sm px-4 py-1.5 rounded-full mb-6">
@@ -148,13 +142,14 @@ export default function Landing() {
                 ))}
               </div>
               <p>
-                <span className="font-bold text-white">{stats.users}+</span>{" "}
+                <span className="font-bold text-white">
+                  {displayStats.users > 0 ? `${displayStats.users}+` : "Join"}
+                </span>{" "}
                 students already using CampusX
               </p>
             </div>
           </div>
 
-          {/* Right side — floating cards */}
           <div className="hidden md:block relative">
             <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-6 shadow-2xl">
               <div className="flex items-center gap-3 mb-4">
@@ -195,7 +190,6 @@ export default function Landing() {
               </div>
             </div>
 
-            {/* Floating badge 1 */}
             <div className="absolute -top-4 -left-6 bg-white rounded-xl p-3 shadow-xl flex items-center gap-2">
               <span className="text-2xl">⚡</span>
               <div>
@@ -204,7 +198,6 @@ export default function Landing() {
               </div>
             </div>
 
-            {/* Floating badge 2 */}
             <div className="absolute -bottom-4 -right-6 bg-white rounded-xl p-3 shadow-xl flex items-center gap-2">
               <span className="text-2xl">🗳️</span>
               <div>
@@ -220,15 +213,23 @@ export default function Landing() {
       <section className="bg-indigo-600 text-white py-12">
         <div className="max-w-7xl mx-auto px-6 grid grid-cols-3 gap-8 text-center">
           <div>
-            <p className="text-4xl md:text-5xl font-bold">{stats.users}+</p>
+            <p className="text-4xl md:text-5xl font-bold">
+              {displayStats.users}
+              {displayStats.users > 0 && "+"}
+            </p>
             <p className="text-sm text-indigo-200 mt-2">Active Students</p>
           </div>
           <div>
-            <p className="text-4xl md:text-5xl font-bold">{stats.teams}+</p>
+            <p className="text-4xl md:text-5xl font-bold">
+              {displayStats.teams}
+              {displayStats.teams > 0 && "+"}
+            </p>
             <p className="text-sm text-indigo-200 mt-2">Teams Formed</p>
           </div>
           <div>
-            <p className="text-4xl md:text-5xl font-bold">{stats.clubs}</p>
+            <p className="text-4xl md:text-5xl font-bold">
+              {displayStats.clubs}
+            </p>
             <p className="text-sm text-indigo-200 mt-2">Active Clubs</p>
           </div>
         </div>
@@ -329,37 +330,57 @@ export default function Landing() {
             </Link>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-6">
-            {featuredEvents.slice(0, 3).map((e) => (
-              <div
-                key={e._id}
-                className="bg-white border border-gray-100 rounded-2xl p-6 hover:shadow-xl hover:-translate-y-1 transition"
-              >
-                <span
-                  className={`inline-block text-xs font-bold px-3 py-1 rounded-full ${
-                    e.type === "hackathon"
-                      ? "bg-purple-100 text-purple-700"
-                      : e.type === "club"
-                        ? "bg-pink-100 text-pink-700"
-                        : "bg-blue-100 text-blue-700"
-                  }`}
+          {events.length === 0 ? (
+            <div className="bg-white border border-dashed border-gray-300 rounded-2xl p-12 text-center">
+              <p className="text-4xl mb-3">📅</p>
+              <p className="font-semibold text-gray-800">
+                No upcoming events right now
+              </p>
+              <p className="text-sm text-gray-500 mt-1">
+                Check back soon — new events are added regularly.
+              </p>
+            </div>
+          ) : (
+            <div className="grid md:grid-cols-3 gap-6">
+              {events.slice(0, 3).map((e) => (
+                <div
+                  key={e._id}
+                  className="bg-white border border-gray-100 rounded-2xl p-6 hover:shadow-xl hover:-translate-y-1 transition"
                 >
-                  {e.type}
-                </span>
-                <h3 className="mt-4 text-xl font-bold">{e.title}</h3>
-                <div className="mt-4 space-y-2 text-sm text-gray-600">
-                  <p>📅 Deadline: {e.deadline}</p>
-                  <p>👥 Team size: 2–6</p>
+                  <span
+                    className={`inline-block text-xs font-bold px-3 py-1 rounded-full ${
+                      e.type === "hackathon"
+                        ? "bg-purple-100 text-purple-700"
+                        : e.type === "club"
+                          ? "bg-pink-100 text-pink-700"
+                          : "bg-blue-100 text-blue-700"
+                    }`}
+                  >
+                    {e.type}
+                  </span>
+                  <h3 className="mt-4 text-xl font-bold">{e.title}</h3>
+                  <div className="mt-4 space-y-2 text-sm text-gray-600">
+                    <p>
+                      📅 Deadline:{" "}
+                      {e.deadline
+                        ? new Date(e.deadline).toLocaleDateString()
+                        : "TBA"}
+                    </p>
+                    <p>
+                      👥 Team size: {e.team_size_min ?? 2}–
+                      {e.team_size_max ?? 6}
+                    </p>
+                  </div>
+                  <Link
+                    to={`/events/${e._id}`}
+                    className="mt-6 inline-block w-full text-center border border-indigo-600 text-indigo-600 py-2 rounded-lg hover:bg-indigo-50 transition"
+                  >
+                    View Details
+                  </Link>
                 </div>
-                <Link
-                  to={`/events/${e._id}`}
-                  className="mt-6 inline-block w-full text-center border border-indigo-600 text-indigo-600 py-2 rounded-lg hover:bg-indigo-50 transition"
-                >
-                  View Details
-                </Link>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       </section>
 
@@ -371,37 +392,51 @@ export default function Landing() {
               Community
             </span>
             <h2 className="mt-3 text-4xl md:text-5xl font-bold">
-              5 Active Clubs
+              {displayStats.clubs > 0
+                ? `${displayStats.clubs} Active Clubs`
+                : "Active Clubs"}
             </h2>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-            {featuredClubs.slice(0, 5).map((c) => {
-              const emoji =
-                c.type === "music"
-                  ? "🎵"
-                  : c.type === "coding"
-                    ? "💻"
-                    : c.type === "robotics"
-                      ? "🤖"
-                      : c.type === "dance"
-                        ? "💃"
-                        : "🎭";
-              return (
-                <Link
-                  to={`/clubs/${c._id}`}
-                  key={c._id}
-                  className="bg-white p-6 rounded-2xl border border-gray-100 hover:shadow-xl hover:-translate-y-1 transition text-center"
-                >
-                  <div className="text-5xl mb-3">{emoji}</div>
-                  <h3 className="font-semibold">{c.name}</h3>
-                  <p className="text-xs text-gray-500 mt-1">
-                    {c.member_count} members
-                  </p>
-                </Link>
-              );
-            })}
-          </div>
+          {clubs.length === 0 ? (
+            <div className="bg-white border border-dashed border-gray-300 rounded-2xl p-12 text-center">
+              <p className="text-4xl mb-3">🎭</p>
+              <p className="font-semibold text-gray-800">No clubs listed yet</p>
+              <p className="text-sm text-gray-500 mt-1">
+                Clubs will appear here once they're created.
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+              {clubs.slice(0, 5).map((c) => {
+                const emoji =
+                  c.type === "music"
+                    ? "🎵"
+                    : c.type === "coding"
+                      ? "💻"
+                      : c.type === "robotics"
+                        ? "🤖"
+                        : c.type === "dance"
+                          ? "💃"
+                          : "🎭";
+                return (
+                  <Link
+                    to={`/clubs/${c._id}`}
+                    key={c._id}
+                    className="bg-white p-6 rounded-2xl border border-gray-100 hover:shadow-xl hover:-translate-y-1 transition text-center"
+                  >
+                    <div className="text-5xl mb-3">{emoji}</div>
+                    <h3 className="font-semibold">
+                      {c.display_name || c.name}
+                    </h3>
+                    <p className="text-xs text-gray-500 mt-1">
+                      {c.member_count ?? 0} members
+                    </p>
+                  </Link>
+                );
+              })}
+            </div>
+          )}
         </div>
       </section>
 
@@ -461,10 +496,6 @@ export default function Landing() {
               className="aspect-square rounded-3xl bg-cover bg-center shadow-2xl"
               style={{ backgroundImage: "url('/event.png')" }}
             />
-            {/* <div className="absolute -bottom-6 -left-6 bg-white p-5 rounded-2xl shadow-xl border border-gray-100">
-              <p className="text-xs text-gray-500">Average match score</p>
-              <p className="text-3xl font-bold text-indigo-600">92%</p>
-            </div> */}
           </div>
         </div>
       </section>
@@ -476,8 +507,8 @@ export default function Landing() {
             Ready to find your team?
           </h2>
           <p className="mt-4 text-lg text-indigo-100 max-w-2xl mx-auto">
-            Join 1000+ IIITV students already using CampusX to build amazing
-            things together.
+            Join IIITV students already using CampusX to build amazing things
+            together.
           </p>
           <Link
             to="/signup"

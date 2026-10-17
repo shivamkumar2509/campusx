@@ -7,6 +7,14 @@ import SkeletonLoader from "../components/ui/SkeletonLoader";
 export default function Dashboard() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  // New: real data for 3 sections
+  const [events, setEvents] = useState([]);
+  const [notifications, setNotifications] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [suggestions, setSuggestions] = useState([]);
+  const [suggestionsLoading, setSuggestionsLoading] = useState(true);
+
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -17,15 +25,66 @@ export default function Dashboard() {
       return;
     }
 
+    let cancelled = false;
+
+    // 1. Load user
     api
       .get("/auth/me")
-      .then(({ data }) => setUser(data.data))
+      .then(({ data }) => {
+        if (!cancelled) setUser(data.data);
+      })
       .catch(() => {
         localStorage.removeItem("token");
         localStorage.removeItem("user");
         navigate("/login", { replace: true });
       })
-      .finally(() => setLoading(false));
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+
+    // 2. Load upcoming events (graceful failure)
+    api
+      .get("/events", { params: { status: "published", limit: 3 } })
+      .then(({ data }) => {
+        if (!cancelled) setEvents(Array.isArray(data.data) ? data.data : []);
+      })
+      .catch(() => {
+        if (!cancelled) setEvents([]);
+      });
+
+    // 3. Load recent notifications + unread count
+    api
+      .get("/notifications", { params: { limit: 3 } })
+      .then(({ data }) => {
+        if (!cancelled) {
+          setNotifications(Array.isArray(data.data) ? data.data : []);
+          setUnreadCount(data.meta?.unread_count || 0);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setNotifications([]);
+          setUnreadCount(0);
+        }
+      });
+
+    // 4. Load suggestions — will 404 until AI matching built; empty state
+    api
+      .get("/events/000000000000000000000000/suggestions")
+      .then(({ data }) => {
+        if (!cancelled)
+          setSuggestions(Array.isArray(data.data) ? data.data : []);
+      })
+      .catch(() => {
+        if (!cancelled) setSuggestions([]);
+      })
+      .finally(() => {
+        if (!cancelled) setSuggestionsLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, [navigate]);
 
   const handleLogout = () => {
@@ -38,7 +97,6 @@ export default function Dashboard() {
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50">
-        {/* Navbar Skeleton */}
         <nav className="bg-white shadow-sm sticky top-0 z-40">
           <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
             <div
@@ -62,7 +120,6 @@ export default function Dashboard() {
           </div>
         </nav>
 
-        {/* Hero Skeleton */}
         <div className="h-64 bg-gradient-to-r from-indigo-900/20 to-indigo-600/20 flex items-center">
           <div className="max-w-7xl mx-auto px-6 w-full">
             <div
@@ -76,7 +133,6 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Stats Skeleton */}
         <div className="max-w-7xl mx-auto px-6 py-8">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
             {[1, 2, 3, 4].map((i) => (
@@ -84,7 +140,6 @@ export default function Dashboard() {
             ))}
           </div>
 
-          {/* Loading Spinner */}
           <div className="flex justify-center py-12">
             <LoadingSpinner
               size="large"
@@ -130,9 +185,11 @@ export default function Dashboard() {
 
             <Link to="/notifications" className="relative">
               <span className="text-2xl">🔔</span>
-              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                3
-              </span>
+              {unreadCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full min-w-[20px] h-5 px-1 flex items-center justify-center">
+                  {unreadCount > 99 ? "99+" : unreadCount}
+                </span>
+              )}
             </Link>
 
             <Link to="/profile" className="flex items-center gap-2">
@@ -154,7 +211,7 @@ export default function Dashboard() {
         </div>
       </nav>
 
-      {/* ===== HERO / WELCOME ===== */}
+      {/* ===== HERO ===== */}
       <section
         className="relative h-64 bg-cover bg-center"
         style={{
@@ -222,7 +279,7 @@ export default function Dashboard() {
           />
         </div>
 
-        {/* Suggestions */}
+        {/* ===== SUGGESTIONS ===== */}
         <section className="mb-8">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-2xl font-bold text-gray-900">
@@ -235,29 +292,47 @@ export default function Dashboard() {
               View all →
             </Link>
           </div>
-          <div className="grid md:grid-cols-3 gap-4">
-            <SuggestionCard
-              event="SIH 2025"
-              score={92}
-              members={["Shivam", "Aman", "Raghav", "Nikhil"]}
-              leader="Shivam Kumar"
-            />
-            <SuggestionCard
-              event="CodeSprint Hackathon"
-              score={87}
-              members={["Aniket", "Priya", "Kabir"]}
-              leader="Aniket Kumar"
-            />
-            <SuggestionCard
-              event="Robotics Workshop"
-              score={81}
-              members={["Raghav", "Nikhil", "Vikram", "Aman"]}
-              leader="Raghav Soni"
-            />
-          </div>
+          {suggestionsLoading ? (
+            <div className="grid md:grid-cols-3 gap-4">
+              {[1, 2, 3].map((i) => (
+                <div
+                  key={i}
+                  className="bg-white p-5 rounded-xl shadow-sm border h-40 animate-pulse"
+                />
+              ))}
+            </div>
+          ) : suggestions.length === 0 ? (
+            <div className="bg-white border border-dashed border-gray-300 rounded-2xl p-10 text-center">
+              <p className="text-4xl mb-3">🎯</p>
+              <p className="font-semibold text-gray-800">
+                No team suggestions yet
+              </p>
+              <p className="text-sm text-gray-500 mt-1">
+                Raise your hand for an event to get AI-matched with teammates.
+              </p>
+              <Link
+                to="/events"
+                className="inline-block mt-4 text-indigo-600 hover:underline text-sm font-medium"
+              >
+                Browse events →
+              </Link>
+            </div>
+          ) : (
+            <div className="grid md:grid-cols-3 gap-4">
+              {suggestions.slice(0, 3).map((s) => (
+                <SuggestionCard
+                  key={s._id}
+                  event={s.event_id?.title || "Event"}
+                  score={Math.round((s.score || 0) * 100)}
+                  members={s.team_members || []}
+                  leader={s.leader_candidate?.name || "TBA"}
+                />
+              ))}
+            </div>
+          )}
         </section>
 
-        {/* Events */}
+        {/* ===== EVENTS ===== */}
         <section className="mb-8">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-2xl font-bold text-gray-900">
@@ -270,29 +345,40 @@ export default function Dashboard() {
               View all →
             </Link>
           </div>
-          <div className="grid md:grid-cols-3 gap-4">
-            <EventCard
-              title="SIH 2025"
-              type="Hackathon"
-              deadline="Oct 30"
-              enrolled={45}
-            />
-            <EventCard
-              title="KrievaXAlfaz Auditions"
-              type="Club"
-              deadline="Oct 5"
-              enrolled={23}
-            />
-            <EventCard
-              title="ML Workshop"
-              type="Workshop"
-              deadline="Nov 12"
-              enrolled={67}
-            />
-          </div>
+          {events.length === 0 ? (
+            <div className="bg-white border border-dashed border-gray-300 rounded-2xl p-10 text-center">
+              <p className="text-4xl mb-3">📅</p>
+              <p className="font-semibold text-gray-800">
+                No upcoming events right now
+              </p>
+              <p className="text-sm text-gray-500 mt-1">
+                New events are added regularly — check back soon.
+              </p>
+            </div>
+          ) : (
+            <div className="grid md:grid-cols-3 gap-4">
+              {events.map((e) => (
+                <EventCard
+                  key={e._id}
+                  id={e._id}
+                  title={e.title}
+                  type={e.type}
+                  deadline={
+                    e.deadline
+                      ? new Date(e.deadline).toLocaleDateString(undefined, {
+                          month: "short",
+                          day: "numeric",
+                        })
+                      : "TBA"
+                  }
+                  enrolled={e.enrolled_count ?? 0}
+                />
+              ))}
+            </div>
+          )}
         </section>
 
-        {/* Notifications */}
+        {/* ===== NOTIFICATIONS ===== */}
         <section className="mb-8">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-2xl font-bold text-gray-900">
@@ -305,26 +391,31 @@ export default function Dashboard() {
               View all →
             </Link>
           </div>
-          <div className="bg-white rounded-xl shadow-sm divide-y">
-            <NotificationItem
-              icon="👥"
-              title="Team suggestion ready"
-              desc="AI found a perfect team for SIH 2025"
-              time="2m ago"
-            />
-            <NotificationItem
-              icon="🗳️"
-              title="Vote needed"
-              desc="Nikhil wants to leave Team Alpha"
-              time="1h ago"
-            />
-            <NotificationItem
-              icon="💬"
-              title="New message"
-              desc="Aman: 'Let's meet at 5 PM'"
-              time="3h ago"
-            />
-          </div>
+          {notifications.length === 0 ? (
+            <div className="bg-white border border-dashed border-gray-300 rounded-2xl p-10 text-center">
+              <p className="text-4xl mb-3">🔔</p>
+              <p className="font-semibold text-gray-800">
+                No notifications yet
+              </p>
+              <p className="text-sm text-gray-500 mt-1">
+                Updates about teams, votes and clubs will show up here.
+              </p>
+            </div>
+          ) : (
+            <div className="bg-white rounded-xl shadow-sm divide-y">
+              {notifications.map((n) => (
+                <NotificationItem
+                  key={n._id}
+                  icon={iconForNotification(n.type)}
+                  title={n.title}
+                  desc={n.message}
+                  time={relativeTime(n.createdAt)}
+                  unread={!n.read}
+                  link={n.link}
+                />
+              ))}
+            </div>
+          )}
         </section>
 
         {/* Quick Actions */}
@@ -355,7 +446,48 @@ export default function Dashboard() {
   );
 }
 
+/* ===== Helpers ===== */
+
+function iconForNotification(type) {
+  const map = {
+    team_confirmed: "👥",
+    team_invite: "✉️",
+    match_found: "🎯",
+    vote_cast: "🗳️",
+    vote_reminder: "🗳️",
+    leave_request: "🚪",
+    leave_approved: "✅",
+    member_joined: "🎉",
+    member_left: "👋",
+    new_message: "💬",
+    task_assigned: "📋",
+    deadline_reminder: "⏰",
+    feedback_request: "⭐",
+    club_recruitment_open: "📢",
+    club_application_status: "📝",
+    club_member_approved: "🎊",
+    application_received: "📥",
+    password_changed: "🔐",
+    account_suspended: "⚠️",
+  };
+  return map[type] || "🔔";
+}
+
+function relativeTime(iso) {
+  if (!iso) return "";
+  const ms = Date.now() - new Date(iso).getTime();
+  const s = Math.floor(ms / 1000);
+  if (s < 60) return "just now";
+  const m = Math.floor(s / 60);
+  if (m < 60) return `${m}m ago`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h ago`;
+  const d = Math.floor(h / 24);
+  return `${d}d ago`;
+}
+
 /* ===== Sub Components ===== */
+
 function StatCard({ icon, label, value, color }) {
   const colors = {
     indigo: "bg-indigo-50 text-indigo-700 border-indigo-100",
@@ -387,28 +519,31 @@ function SuggestionCard({ event, score, members, leader }) {
         Leader: <span className="font-medium">{leader}</span>
       </p>
       <div className="flex -space-x-2 mb-4">
-        {members.map((m) => (
-          <img
-            key={m}
-            src={`https://ui-avatars.com/api/?name=${m}&background=6366f1&color=fff&size=32`}
-            alt={m}
-            className="w-8 h-8 rounded-full border-2 border-white"
-            title={m}
-          />
+        {(members || []).slice(0, 5).map((m, idx) => (
+          <div
+            key={m._id || idx}
+            className="w-8 h-8 rounded-full bg-indigo-500 border-2 border-white flex items-center justify-center text-xs font-bold text-white"
+            title={m.name || ""}
+          >
+            {(m.name || "?").charAt(0)}
+          </div>
         ))}
       </div>
-      <button className="w-full bg-indigo-600 text-white py-2 rounded-lg hover:bg-indigo-700 text-sm">
+      <Link
+        to="/matching"
+        className="block w-full text-center bg-indigo-600 text-white py-2 rounded-lg hover:bg-indigo-700 text-sm"
+      >
         View Suggestion
-      </button>
+      </Link>
     </div>
   );
 }
 
-function EventCard({ title, type, deadline, enrolled }) {
+function EventCard({ id, title, type, deadline, enrolled }) {
   const typeColor =
-    type === "Hackathon"
+    type === "hackathon"
       ? "bg-purple-100 text-purple-700"
-      : type === "Club"
+      : type === "club"
         ? "bg-pink-100 text-pink-700"
         : "bg-blue-100 text-blue-700";
 
@@ -417,29 +552,48 @@ function EventCard({ title, type, deadline, enrolled }) {
       <span className={`text-xs font-semibold px-2 py-1 rounded ${typeColor}`}>
         {type}
       </span>
-      <h3 className="font-semibold text-gray-900 mt-3">{title}</h3>
+      <h3 className="font-semibold text-gray-900 mt-3 line-clamp-2">{title}</h3>
       <div className="mt-3 text-sm text-gray-600 space-y-1">
         <p>📅 Deadline: {deadline}</p>
         <p>👥 {enrolled} enrolled</p>
       </div>
-      <button className="mt-4 w-full border border-indigo-600 text-indigo-600 py-2 rounded-lg hover:bg-indigo-50 text-sm">
+      <Link
+        to={`/events/${id}`}
+        className="block mt-4 text-center border border-indigo-600 text-indigo-600 py-2 rounded-lg hover:bg-indigo-50 text-sm"
+      >
         View Details
-      </button>
+      </Link>
     </div>
   );
 }
 
-function NotificationItem({ icon, title, desc, time }) {
-  return (
-    <div className="p-4 flex items-start gap-3 hover:bg-gray-50 cursor-pointer">
+function NotificationItem({ icon, title, desc, time, unread, link }) {
+  const body = (
+    <div className="p-4 flex items-start gap-3 hover:bg-gray-50">
       <span className="text-2xl">{icon}</span>
-      <div className="flex-1">
-        <p className="font-medium text-gray-900">{title}</p>
-        <p className="text-sm text-gray-600">{desc}</p>
+      <div className="flex-1 min-w-0">
+        <p
+          className={`${unread ? "font-semibold" : "font-medium"} text-gray-900 truncate`}
+        >
+          {title}
+        </p>
+        <p className="text-sm text-gray-600 line-clamp-2">{desc}</p>
       </div>
       <span className="text-xs text-gray-400 whitespace-nowrap">{time}</span>
+      {unread && (
+        <span className="w-2 h-2 rounded-full bg-indigo-600 mt-2 flex-shrink-0" />
+      )}
     </div>
   );
+
+  if (link) {
+    return (
+      <Link to={link} className="block">
+        {body}
+      </Link>
+    );
+  }
+  return body;
 }
 
 function QuickAction({ icon, label, to }) {

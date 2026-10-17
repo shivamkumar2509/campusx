@@ -1,32 +1,16 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
-import {
-  fetchTeam,
-  fetchTeamMembers,
-  fetchTeamConversation,
-  fetchTeamTasks,
-  confirmTeam,
-} from "../api/teams";
-import {
-  fetchReplacements,
-  findReplacement,
-  inviteReplacement,
-} from "../api/replacements";
-import { createLeaveRequest, fetchLeaveRequests } from "../api/leaveRequests";
+import { fetchTeam, fetchTeamMembers, confirmTeam } from "../api/teams";
 import useApiData from "../hooks/useApiData";
 import PageShell from "../components/common/PageShell";
-import {
-  EmptyState,
-  ErrorState,
-  LoadingBlock,
-} from "../components/common/StateViews";
+import { ErrorState, LoadingBlock } from "../components/common/StateViews";
 import { clearSession, getErrorInfo } from "../utils/clubHelpers";
 import LeaderElection from "../components/team/LeaderElection";
 import LeaveRequestTab from "../components/team/LeaveRequestTab";
 import ReplacementTab from "../components/team/ReplacementTab";
 
 const TABS = [
-  { key: "chat", label: "💬 Chat" },
+  { key: "chat", label: "💬 Chat", requiresConfirmed: true },
   { key: "tasks", label: "📋 Tasks" },
   { key: "voting", label: "🗳️ Voting" },
   { key: "leave", label: "🚪 Leave" },
@@ -55,8 +39,23 @@ export default function TeamDashboard() {
     team.error && (team.error.status === 404 || team.error.status === 403);
 
   const isLeader = team.data?.is_leader || false;
+  const isConfirmed = team.data?.status === "confirmed";
+  const isDraft = team.data?.status === "draft";
 
-  const visibleTabs = TABS.filter((t) => !t.leaderOnly || isLeader);
+  // Filter tabs:
+  //  - leader-only tabs hidden for non-leaders
+  //  - chat tab hidden until team is confirmed
+  const visibleTabs = TABS.filter((t) => {
+    if (t.leaderOnly && !isLeader) return false;
+    if (t.requiresConfirmed && !isConfirmed) return false;
+    return true;
+  });
+
+  // If chat was active but is now hidden (team moved out of confirmed → won't
+  // happen, but defensive), fall back to tasks
+  const effectiveTab = visibleTabs.some((t) => t.key === activeTab)
+    ? activeTab
+    : "tasks";
 
   if (team.loading || members.loading) {
     return (
@@ -88,13 +87,22 @@ export default function TeamDashboard() {
   const teamData = team.data;
   const membersData = members.data?.data || [];
 
+  const handleConfirm = async () => {
+    try {
+      await confirmTeam(teamId);
+      // Reload both — team status changes AND conversation is created
+      team.reload();
+      members.reload();
+    } catch (err) {
+      const info = getErrorInfo(err);
+      alert(info.message || "Failed to confirm team");
+    }
+  };
+
   return (
     <PageShell>
       {/* Back link */}
-      <Link
-        to="/dashboard"
-        className="text-sm text-indigo-600 hover:underline"
-      >
+      <Link to="/dashboard" className="text-sm text-indigo-600 hover:underline">
         ← Back to dashboard
       </Link>
 
@@ -172,26 +180,29 @@ export default function TeamDashboard() {
           </div>
         </div>
 
-        {/* Confirm button for leader */}
-        {isLeader && teamData.status === "draft" && (
+        {/* Draft banner — confirm + lock notice */}
+        {isDraft && (
           <div className="px-8 py-4 bg-yellow-50 border-b border-yellow-200">
             <div className="flex items-center justify-between flex-wrap gap-3">
-              <p className="text-sm text-yellow-800">
-                ⚠️ Team is in draft. Confirm to lock members and start working.
-              </p>
-              <button
-                onClick={async () => {
-                  try {
-                    await confirmTeam(teamId);
-                    team.reload();
-                  } catch (err) {
-                    alert(err.response?.data?.message || "Failed to confirm");
-                  }
-                }}
-                className="bg-indigo-600 text-white px-5 py-2 rounded-lg hover:bg-indigo-700 text-sm font-semibold"
-              >
-                Confirm Team
-              </button>
+              <div>
+                <p className="text-sm text-yellow-800 font-medium">
+                  ⚠️ Team is in draft.{" "}
+                  {isLeader
+                    ? "Confirm to lock members and open chat."
+                    : "Chat opens once the leader confirms the team."}
+                </p>
+                <p className="text-xs text-yellow-700 mt-1">
+                  🔒 Chat is locked until the team is confirmed.
+                </p>
+              </div>
+              {isLeader && (
+                <button
+                  onClick={handleConfirm}
+                  className="bg-indigo-600 text-white px-5 py-2 rounded-lg hover:bg-indigo-700 text-sm font-semibold"
+                >
+                  Confirm Team
+                </button>
+              )}
             </div>
           </div>
         )}
@@ -208,10 +219,10 @@ export default function TeamDashboard() {
             key={tab.key}
             type="button"
             role="tab"
-            aria-selected={activeTab === tab.key}
+            aria-selected={effectiveTab === tab.key}
             onClick={() => setActiveTab(tab.key)}
             className={`px-5 py-2.5 rounded-lg text-sm font-semibold whitespace-nowrap transition ${
-              activeTab === tab.key
+              effectiveTab === tab.key
                 ? "bg-indigo-600 text-white shadow-md"
                 : "bg-white text-gray-700 border border-gray-200 hover:bg-gray-50"
             }`}
@@ -223,19 +234,23 @@ export default function TeamDashboard() {
 
       {/* ===== TAB CONTENT ===== */}
       <div className="mt-6">
-        {activeTab === "chat" && <ChatTab teamId={teamId} />}
-        {activeTab === "tasks" && <TasksTab teamId={teamId} />}
-        {activeTab === "voting" && (
-          <LeaderElection teamId={teamId} members={membersData} isLeader={isLeader} />
+        {effectiveTab === "chat" && <ChatTab teamId={teamId} />}
+        {effectiveTab === "tasks" && <TasksTab teamId={teamId} />}
+        {effectiveTab === "voting" && (
+          <LeaderElection
+            teamId={teamId}
+            members={membersData}
+            isLeader={isLeader}
+          />
         )}
-        {activeTab === "leave" && (
+        {effectiveTab === "leave" && (
           <LeaveRequestTab
             teamId={teamId}
             members={membersData}
             isLeader={isLeader}
           />
         )}
-        {activeTab === "replacement" && isLeader && (
+        {effectiveTab === "replacement" && isLeader && (
           <ReplacementTab teamId={teamId} members={membersData} />
         )}
       </div>
@@ -243,52 +258,37 @@ export default function TeamDashboard() {
   );
 }
 
-/* ===== CHAT TAB (placeholder - Shivam will implement full) ===== */
+/* ===== CHAT TAB — redirect to full Chat page ===== */
 function ChatTab({ teamId }) {
-  const conversation = useApiData(
-    () => fetchTeamConversation(teamId),
-    [teamId]
-  );
-
   return (
-    <div className="bg-white rounded-xl shadow-sm border p-6">
-      <h2 className="text-xl font-bold mb-4">💬 Team Chat</h2>
-      {conversation.loading && <LoadingBlock lines={3} />}
-      {conversation.error && (
-        <ErrorState message={conversation.error.message} onRetry={conversation.reload} />
-      )}
-      {conversation.data && (
-        <div className="text-center py-12 text-gray-500">
-          <p className="text-4xl mb-3">💬</p>
-          <p className="font-medium">Chat is ready</p>
-          <p className="text-sm mt-1">
-            Conversation ID: {conversation.data._id}
-          </p>
-          <p className="text-xs text-gray-400 mt-2">
-            Full chat UI coming soon...
-          </p>
-        </div>
-      )}
+    <div className="bg-white rounded-xl shadow-sm border p-10 text-center">
+      <p className="text-5xl mb-4">💬</p>
+      <h2 className="text-xl font-bold text-gray-900">Team Chat is open</h2>
+      <p className="mt-2 text-gray-600">
+        Chat unlocked because your team is confirmed. Open the full chat to
+        start messaging.
+      </p>
+      <Link
+        to={`/teams/${teamId}/chat`}
+        className="inline-block mt-6 bg-indigo-600 text-white px-6 py-2.5 rounded-lg hover:bg-indigo-700 font-medium"
+      >
+        Open Chat →
+      </Link>
     </div>
   );
 }
 
 /* ===== TASKS TAB (placeholder - Raghav will implement full) ===== */
 function TasksTab({ teamId }) {
-  const tasks = useApiData(() => fetchTeamTasks(teamId), [teamId]);
-
+  // Kept minimal — Raghav's real tasks implementation replaces this later
   return (
     <div className="bg-white rounded-xl shadow-sm border p-6">
       <h2 className="text-xl font-bold mb-4">📋 Tasks</h2>
-      {tasks.loading && <LoadingBlock lines={3} />}
-      {tasks.error && <ErrorState message={tasks.error.message} onRetry={tasks.reload} />}
-      {tasks.data && (
-        <div className="text-center py-12 text-gray-500">
-          <p className="text-4xl mb-3">📋</p>
-          <p className="font-medium">Kanban board coming soon</p>
-          <p className="text-sm mt-1">Raghav will implement this</p>
-        </div>
-      )}
+      <div className="text-center py-12 text-gray-500">
+        <p className="text-4xl mb-3">📋</p>
+        <p className="font-medium">Kanban board coming soon</p>
+        <p className="text-sm mt-1">Raghav will implement this</p>
+      </div>
     </div>
   );
 }
