@@ -13,19 +13,13 @@ const conversationSchema = new mongoose.Schema(
       enum: ["team", "direct", "group"],
       default: "team",
     },
-    name: {
-      type: String,
-      default: "",
-    },
-    last_message_at: {
-      type: Date,
-      default: null,
-    },
+    name: { type: String, default: "" },
+    last_message_at: { type: Date, default: null },
   },
   { timestamps: true },
 );
 
-conversationSchema.index({ team_id: 1 }, { unique: true });
+// conversationSchema.index({ team_id: 1 }, { unique: true });
 conversationSchema.index({ last_message_at: -1 });
 
 module.exports = mongoose.model("Conversation", conversationSchema);

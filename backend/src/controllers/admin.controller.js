@@ -1,400 +1,329 @@
-const bcrypt = require("bcryptjs");
 const crypto = require("crypto");
+const bcrypt = require("bcryptjs");
 
-const AuditLog = require("../models/auditLog.model");
 const User = require("../models/user.model");
 const Team = require("../models/team.model");
-const TeamMember = require("../models/teamMember.model");
 const Event = require("../models/event.model");
 const Club = require("../models/club.model");
-const ClubMember = require("../models/clubMember.model");
-const ClubApplication = require("../models/clubApplication.model");
-const Enrollment = require("../models/enrollment.model");
-const Skill = require("../models/skill.model");
-const ConversationMember = require("../models/conversationMember.model");
+const Feedback = require("../models/feedback.model");
+const AuditLog = require("../models/auditLog.model");
+const ExternalInvitation = require("../models/externalInvitation.model");
 
 const HttpError = require("../utils/httpError");
+// ✅ Clean imports (Duplicate hataye)
 const {
   isObjectId,
   getPagination,
   buildMeta,
-  getSort,
 } = require("../utils/queryHelpers");
+const { createNotification } = require("../services/notification.service");
 
-const asString = (v) => (typeof v === "string" ? v.trim() : "");
-
-const assertAdmin = (req) => {
-  if (!req.user || req.user.role !== "admin") {
-    throw new HttpError(403, "FORBIDDEN", "Admin only");
-  }
-};
-
-const STUDENT_DOMAIN = "@iiitvadodara.ac.in";
-const FACULTY_DOMAIN = "@iiitv.ac.in";
-
-const genTempPassword = () => {
-  // 8-char, easy to read (no 0/O/1/l/I)
-  const chars = "abcdefghjkmnpqrstuvwxyzABCDEFGHJKMNPQRSTUVWXYZ23456789";
-  let out = "";
-  for (let i = 0; i < 8; i += 1) {
-    out += chars[crypto.randomInt(0, chars.length)];
-  }
-  return out;
-};
-
-// ==================== ANALYTICS ====================
-
+// GET /api/admin/analytics
 exports.getAnalytics = async (req, res) => {
-  assertAdmin(req);
+  if (req.user.role !== "admin")
+    throw new HttpError(403, "FORBIDDEN", "Admin only");
 
   const [
-    users,
-    students,
-    admins,
-    pending,
-    suspended,
-    teams,
-    confirmedTeams,
-    events,
-    publishedEvents,
-    clubs,
-    activeClubs,
-    clubMembers,
-    clubApplications,
-    enrollments,
+    usersTotal,
+    usersStudents,
+    usersAdmins,
+    teamsTotal,
+    teamsConfirmed,
+    eventsTotal,
+    eventsPublished,
+    clubsActive,
+    feedbackAvg,
   ] = await Promise.all([
-    User.countDocuments(),
+    User.countDocuments({}),
     User.countDocuments({ role: "student" }),
     User.countDocuments({ role: "admin" }),
-    User.countDocuments({ status: "pending_approval" }),
-    User.countDocuments({ status: "suspended" }),
-    Team.countDocuments(),
+    Team.countDocuments({}),
     Team.countDocuments({ status: "confirmed" }),
-    Event.countDocuments(),
+    Event.countDocuments({}),
     Event.countDocuments({ status: "published" }),
-    Club.countDocuments(),
     Club.countDocuments({ status: "active" }),
-    ClubMember.countDocuments({ status: "active" }),
-    ClubApplication.countDocuments(),
-    Enrollment.countDocuments(),
+    Feedback.aggregate([
+      { $group: { _id: null, avg: { $avg: "$rating" }, count: { $sum: 1 } } },
+    ]),
   ]);
 
-  const day = 24 * 60 * 60 * 1000;
-  const now = new Date();
-  const dayBuckets = [];
-  for (let i = 6; i >= 0; i -= 1) {
-    const start = new Date(now.getTime() - i * day);
-    start.setHours(0, 0, 0, 0);
-    const end = new Date(start.getTime() + day);
-    dayBuckets.push({ start, end });
-  }
-
-  const userSeries = await Promise.all(
-    dayBuckets.map((b) =>
-      User.countDocuments({ createdAt: { $gte: b.start, $lt: b.end } }),
-    ),
-  );
-
-  const teamSeries = await Promise.all(
-    dayBuckets.map((b) =>
-      Team.countDocuments({ createdAt: { $gte: b.start, $lt: b.end } }),
-    ),
-  );
-
-  const applicationSeries = await Promise.all(
-    dayBuckets.map((b) =>
-      ClubApplication.countDocuments({
-        applied_at: { $gte: b.start, $lt: b.end },
-      }),
-    ),
-  );
-
-  const activity_7d = dayBuckets.map((b, i) => ({
-    date: b.start.toISOString().slice(0, 10),
-    users: userSeries[i],
-    teams: teamSeries[i],
-    applications: applicationSeries[i],
-  }));
+  const rating = feedbackAvg[0]
+    ? Math.round(feedbackAvg[0].avg * 100) / 100
+    : 0;
+  const feedbackCount = feedbackAvg[0] ? feedbackAvg[0].count : 0;
 
   return res.status(200).json({
     success: true,
     data: {
-      counts: {
-        users,
-        students,
-        admins,
-        pending_approval: pending,
-        suspended,
-        teams,
-        confirmed_teams: confirmedTeams,
-        events,
-        published_events: publishedEvents,
-        clubs,
-        active_clubs: activeClubs,
-        club_members: clubMembers,
-        club_applications: clubApplications,
-        enrollments,
+      users: {
+        total: usersTotal,
+        students: usersStudents,
+        admins: usersAdmins,
       },
-      activity_7d,
+      teams: { total: teamsTotal, confirmed: teamsConfirmed },
+      events: { total: eventsTotal, published: eventsPublished },
+      clubs: { active: clubsActive },
+      feedback: { average_rating: rating, total: feedbackCount },
     },
   });
 };
 
-exports.exportAnalytics = async (req, res) => {
-  assertAdmin(req);
-
-  const [
-    users,
-    students,
-    admins,
-    teams,
-    events,
-    clubs,
-    applications,
-    enrollments,
-  ] = await Promise.all([
-    User.countDocuments(),
-    User.countDocuments({ role: "student" }),
-    User.countDocuments({ role: "admin" }),
-    Team.countDocuments(),
-    Event.countDocuments(),
-    Club.countDocuments(),
-    ClubApplication.countDocuments(),
-    Enrollment.countDocuments(),
-  ]);
-
-  const recentLogs = await AuditLog.find()
-    .populate("user_id", "name email")
-    .sort({ createdAt: -1 })
-    .limit(100)
-    .lean();
-
-  const esc = (v) => {
-    if (v === null || v === undefined) return "";
-    const s = String(v);
-    if (s.includes(",") || s.includes('"') || s.includes("\n")) {
-      return `"${s.replace(/"/g, '""')}"`;
-    }
-    return s;
-  };
-
-  const lines = [];
-  lines.push("# CampusX Admin Export");
-  lines.push(`# Generated at,${new Date().toISOString()}`);
-  lines.push("");
-  lines.push("Section,Metric,Value");
-  lines.push(`Summary,Users,${users}`);
-  lines.push(`Summary,Students,${students}`);
-  lines.push(`Summary,Admins,${admins}`);
-  lines.push(`Summary,Teams,${teams}`);
-  lines.push(`Summary,Events,${events}`);
-  lines.push(`Summary,Clubs,${clubs}`);
-  lines.push(`Summary,Club Applications,${applications}`);
-  lines.push(`Summary,Event Enrollments,${enrollments}`);
-  lines.push("");
-
-  lines.push("# Recent Audit Logs (last 100)");
-  lines.push("Timestamp,User Name,User Email,Action,Entity Type,Entity ID,IP");
-  recentLogs.forEach((l) => {
-    lines.push(
-      [
-        l.createdAt ? new Date(l.createdAt).toISOString() : "",
-        esc(l.user_id?.name || ""),
-        esc(l.user_id?.email || ""),
-        esc(l.action || ""),
-        esc(l.entity_type || ""),
-        esc(l.entity_id || ""),
-        esc(l.ip_address || ""),
-      ].join(","),
-    );
-  });
-
-  const csv = lines.join("\n");
-  const filename = `campusx-admin-export-${new Date()
-    .toISOString()
-    .slice(0, 10)}.csv`;
-
-  res.setHeader("Content-Type", "text/csv; charset=utf-8");
-  res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
-  return res.status(200).send(csv);
-};
-
-exports.listAuditLogs = async (req, res) => {
-  assertAdmin(req);
+// GET /api/admin/audit-logs?page=&limit=
+exports.getAuditLogs = async (req, res) => {
+  if (req.user.role !== "admin")
+    throw new HttpError(403, "FORBIDDEN", "Admin only");
 
   const { page, limit, skip } = getPagination(req.query);
-  const sort = getSort(req.query, ["createdAt"], "createdAt", "desc");
-  const filter = {};
-
-  const action = asString(req.query.action);
-  if (action) filter.action = action;
-  const entityType = asString(req.query.entity_type);
-  if (entityType) filter.entity_type = entityType;
 
   const [items, total] = await Promise.all([
-    AuditLog.find(filter)
+    AuditLog.find({})
       .populate("user_id", "name email role")
-      .sort(sort)
+      .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit)
       .lean(),
-    AuditLog.countDocuments(filter),
+    AuditLog.countDocuments({}),
   ]);
 
-  return res
-    .status(200)
-    .json({ success: true, data: items, meta: buildMeta(page, limit, total) });
+  return res.status(200).json({
+    success: true,
+    data: items,
+    meta: buildMeta(page, limit, total),
+  });
 };
 
-// ==================== STUDENT MANAGEMENT ====================
+// GET /api/admin/analytics/export
+exports.exportAnalytics = async (req, res) => {
+  if (req.user.role !== "admin")
+    throw new HttpError(403, "FORBIDDEN", "Admin only");
 
-// GET /api/admin/students?year=&batch=&status=&role=&q=&page=&limit=
-exports.listStudents = async (req, res) => {
-  assertAdmin(req);
+  const [users, teams, events, clubs] = await Promise.all([
+    User.countDocuments({}),
+    Team.countDocuments({}),
+    Event.countDocuments({}),
+    Club.countDocuments({}),
+  ]);
+
+  const csv = [
+    "metric,value",
+    `total_users,${users}`,
+    `total_teams,${teams}`,
+    `total_events,${events}`,
+    `total_clubs,${clubs}`,
+    `exported_at,${new Date().toISOString()}`,
+  ].join("\n");
+
+  res.setHeader("Content-Type", "text/csv");
+  res.setHeader(
+    "Content-Disposition",
+    'attachment; filename="campusx-analytics.csv"',
+  );
+  return res.status(200).send(csv);
+};
+
+// ===== LIST STUDENTS / USERS =====
+// GET /api/admin/students?status=&role=&q=&page=&limit=
+exports.listUsers = async (req, res) => {
+  if (req.user.role !== "admin")
+    throw new HttpError(403, "FORBIDDEN", "Admin only");
 
   const { page, limit, skip } = getPagination(req.query);
-  const sort = getSort(
-    req.query,
-    ["createdAt", "name", "year", "batch"],
-    "createdAt",
-    "desc",
-  );
   const filter = {};
 
-  const role = asString(req.query.role) || "student";
-  if (["student", "admin"].includes(role)) filter.role = role;
-
-  const status = asString(req.query.status);
-  if (status) {
-    if (!["pending_approval", "active", "suspended"].includes(status)) {
-      throw new HttpError(400, "VALIDATION_ERROR", "Invalid status filter");
+  if (req.query.status) {
+    if (
+      !["pending_approval", "active", "suspended"].includes(req.query.status)
+    ) {
+      throw new HttpError(400, "VALIDATION_ERROR", "Invalid status");
     }
-    filter.status = status;
+    filter.status = req.query.status;
   }
-
-  const year = Number.parseInt(req.query.year, 10);
-  if (Number.isInteger(year) && year >= 1 && year <= 4) {
-    filter.year = year;
+  if (req.query.role) {
+    if (!["student", "admin"].includes(req.query.role)) {
+      throw new HttpError(400, "VALIDATION_ERROR", "Invalid role");
+    }
+    filter.role = req.query.role;
   }
-
-  const batch = Number.parseInt(req.query.batch, 10);
-  if (Number.isInteger(batch) && batch >= 2000 && batch <= 2100) {
-    filter.batch = batch;
-  }
-
-  const q = asString(req.query.q);
-  if (q) {
-    filter.$or = [
-      { name: { $regex: q, $options: "i" } },
-      { email: { $regex: q, $options: "i" } },
-    ];
+  if (req.query.q && typeof req.query.q === "string") {
+    const q = req.query.q.trim();
+    if (q) {
+      filter.$or = [
+        { name: { $regex: q, $options: "i" } },
+        { email: { $regex: q, $options: "i" } },
+      ];
+    }
   }
 
   const [items, total] = await Promise.all([
     User.find(filter)
-      .select("-password_hash")
-      .sort(sort)
+      .select("-password_hash -github_data")
+      .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit)
       .lean(),
     User.countDocuments(filter),
   ]);
 
-  return res
-    .status(200)
-    .json({ success: true, data: items, meta: buildMeta(page, limit, total) });
-};
-
-// GET /api/admin/students/:userId — detailed view
-exports.getStudent = async (req, res) => {
-  assertAdmin(req);
-  const { userId } = req.params;
-  if (!isObjectId(userId)) {
-    throw new HttpError(400, "INVALID_ID", "Invalid user id");
-  }
-
-  const user = await User.findById(userId).select("-password_hash").lean();
-  if (!user) throw new HttpError(404, "USER_NOT_FOUND", "User not found");
-
-  const [skills, clubMemberships, teamMemberships] = await Promise.all([
-    Skill.find({ user_id: userId }).lean(),
-    ClubMember.find({ user_id: userId, status: "active" })
-      .populate("club_id", "name display_name type")
-      .lean(),
-    TeamMember.find({ user_id: userId, status: "accepted" })
-      .populate("team_id", "name status")
-      .lean(),
-  ]);
-
   return res.status(200).json({
     success: true,
-    data: { ...user, skills, clubs: clubMemberships, teams: teamMemberships },
+    data: items,
+    meta: buildMeta(page, limit, total),
   });
 };
 
-// POST /api/admin/students
-// Body: { role, name, username, year?, batch? }
-exports.createStudent = async (req, res) => {
-  assertAdmin(req);
-  const body = req.body || {};
+// ===== APPROVE USER =====
+// PATCH /api/admin/users/:userId/approve
+exports.approveUser = async (req, res) => {
+  if (req.user.role !== "admin")
+    throw new HttpError(403, "FORBIDDEN", "Admin only");
 
-  const role = body.role === "admin" ? "admin" : "student";
-  const name = asString(body.name);
-  const username = asString(body.username).toLowerCase();
+  const { userId } = req.params;
+  if (!isObjectId(userId))
+    throw new HttpError(400, "INVALID_ID", "Invalid user id");
 
-  if (!name) throw new HttpError(400, "VALIDATION_ERROR", "name is required");
-  if (!username)
-    throw new HttpError(400, "VALIDATION_ERROR", "username is required");
-  if (!/^[a-z0-9._-]{3,32}$/.test(username)) {
+  const user = await User.findById(userId);
+  if (!user) throw new HttpError(404, "USER_NOT_FOUND", "User not found");
+
+  if (user.status === "active")
+    throw new HttpError(422, "ALREADY_ACTIVE", "User is already active");
+
+  user.status = "active";
+  await user.save();
+
+  // Welcome notification
+  await createNotification({
+    user: user._id,
+    type: "account_approved",
+    title: "Welcome to CampusX! 🎉",
+    message: "Your account has been approved. You can now log in.",
+    link: "/dashboard",
+    priority: "high",
+  });
+
+  return res.status(200).json({ success: true, data: user });
+};
+
+// ===== SUSPEND USER =====
+// PATCH /api/admin/users/:userId/suspend
+exports.suspendUser = async (req, res) => {
+  if (req.user.role !== "admin")
+    throw new HttpError(403, "FORBIDDEN", "Admin only");
+
+  const { userId } = req.params;
+  if (!isObjectId(userId))
+    throw new HttpError(400, "INVALID_ID", "Invalid user id");
+
+  const user = await User.findById(userId);
+  if (!user) throw new HttpError(404, "USER_NOT_FOUND", "User not found");
+  if (user.role === "admin")
+    throw new HttpError(422, "CANNOT_SUSPEND_ADMIN", "Cannot suspend an admin");
+
+  user.status = "suspended";
+  await user.save();
+
+  return res.status(200).json({ success: true, data: user });
+};
+
+// ===== RESTORE USER =====
+// PATCH /api/admin/users/:userId/restore
+exports.restoreUser = async (req, res) => {
+  if (req.user.role !== "admin")
+    throw new HttpError(403, "FORBIDDEN", "Admin only");
+
+  const { userId } = req.params;
+  if (!isObjectId(userId))
+    throw new HttpError(400, "INVALID_ID", "Invalid user id");
+
+  const user = await User.findById(userId);
+  if (!user) throw new HttpError(404, "USER_NOT_FOUND", "User not found");
+
+  user.status = "active";
+  await user.save();
+
+  return res.status(200).json({ success: true, data: user });
+};
+
+// ===== DELETE USER =====
+// DELETE /api/admin/users/:userId
+exports.deleteUser = async (req, res) => {
+  if (req.user.role !== "admin")
+    throw new HttpError(403, "FORBIDDEN", "Admin only");
+
+  const { userId } = req.params;
+  if (!isObjectId(userId))
+    throw new HttpError(400, "INVALID_ID", "Invalid user id");
+
+  if (String(userId) === String(req.user.id))
+    throw new HttpError(
+      422,
+      "CANNOT_DELETE_SELF",
+      "You cannot delete yourself",
+    );
+
+  const user = await User.findByIdAndDelete(userId);
+  if (!user) throw new HttpError(404, "USER_NOT_FOUND", "User not found");
+
+  return res.status(200).json({ success: true, message: "User deleted" });
+};
+
+// ===== CREATE USER (admin-created with temp password) =====
+// POST /api/admin/users
+exports.createUser = async (req, res) => {
+  if (req.user.role !== "admin")
+    throw new HttpError(403, "FORBIDDEN", "Admin only");
+
+  const {
+    role = "student",
+    name,
+    username,
+    year,
+    batch,
+    branch,
+  } = req.body || {};
+
+  if (!name || !username)
     throw new HttpError(
       400,
       "VALIDATION_ERROR",
-      "username must be 3–32 chars, lowercase letters/digits/._- only",
+      "name and username are required",
     );
-  }
+  if (!["student", "admin"].includes(role))
+    throw new HttpError(400, "VALIDATION_ERROR", "Invalid role");
 
-  const domain = role === "admin" ? FACULTY_DOMAIN : STUDENT_DOMAIN;
-  const email = `${username}${domain}`;
+  const DOMAINS = {
+    student: "@iiitvadodara.ac.in",
+    admin: "@iiitv.ac.in",
+  };
+
+  const cleanUsername = String(username).trim().toLowerCase();
+  if (!/^[a-z0-9._-]+$/.test(cleanUsername))
+    throw new HttpError(400, "VALIDATION_ERROR", "Invalid username format");
+
+  const email = `${cleanUsername}${DOMAINS[role]}`;
 
   const existing = await User.findOne({ email });
-  if (existing) {
-    throw new HttpError(409, "EMAIL_EXISTS", `Email ${email} already exists`);
-  }
+  if (existing)
+    throw new HttpError(409, "EMAIL_EXISTS", "Email already registered");
 
-  let year = 1;
-  let batch = null;
-  if (role === "student") {
-    year = Number.parseInt(body.year, 10);
-    if (!Number.isInteger(year) || year < 1 || year > 4) {
-      throw new HttpError(400, "VALIDATION_ERROR", "year must be 1–4");
-    }
-    const b = Number.parseInt(body.batch, 10);
-    if (Number.isInteger(b) && b >= 2000 && b <= 2100) {
-      batch = b;
-    } else {
-      // Infer batch from year using current academic year
-      const now = new Date();
-      const acadYear =
-        now.getMonth() >= 6 ? now.getFullYear() : now.getFullYear() - 1;
-      batch = acadYear - year + 1;
-    }
-  }
-
-  const tempPassword = genTempPassword();
+  // Generate temp password
+  const tempPassword = crypto
+    .randomBytes(6)
+    .toString("base64")
+    .replace(/[+/=]/g, "")
+    .slice(0, 10);
   const password_hash = await bcrypt.hash(tempPassword, 10);
 
   const user = await User.create({
-    name,
+    name: name.trim(),
     email,
     password_hash,
+    year: role === "student" ? year || 1 : 1,
+    batch: role === "student" ? batch || null : null,
+    branch: role === "student" ? branch || "" : "", // ✅ Branch add kiya
     role,
-    year,
-    batch,
     status: "pending_approval",
     must_change_password: true,
   });
-
-  res.locals.auditEntityId = user._id;
 
   return res.status(201).json({
     success: true,
@@ -406,362 +335,113 @@ exports.createStudent = async (req, res) => {
         role: user.role,
         year: user.year,
         batch: user.batch,
+        branch: user.branch, // ✅ Response mein bhi bheja
         status: user.status,
       },
       temp_password: tempPassword,
     },
-    message:
-      "Account created. Share the temporary password with the user. Admin approval required before login.",
   });
 };
 
-// PATCH /api/admin/students/:userId/approve
-exports.approveStudent = async (req, res) => {
-  assertAdmin(req);
-  const { userId } = req.params;
-  if (!isObjectId(userId))
-    throw new HttpError(400, "INVALID_ID", "Invalid user id");
+// ===== BROADCAST NOTIFICATION =====
+// POST /api/admin/notifications/broadcast
+exports.broadcastNotification = async (req, res) => {
+  if (req.user.role !== "admin")
+    throw new HttpError(403, "FORBIDDEN", "Admin only");
 
-  const user = await User.findById(userId);
-  if (!user) throw new HttpError(404, "USER_NOT_FOUND", "User not found");
+  const {
+    title,
+    message,
+    link = "",
+    priority = "medium",
+    target = "all",
+  } = req.body || {};
 
-  if (user.status !== "pending_approval") {
-    throw new HttpError(422, "INVALID_STATUS", "User is not pending approval");
-  }
-
-  user.status = "active";
-  await user.save();
-
-  res.locals.auditEntityId = user._id;
-
-  return res.status(200).json({
-    success: true,
-    data: { _id: user._id, status: user.status },
-  });
-};
-
-// PATCH /api/admin/students/:userId/suspend
-exports.suspendStudent = async (req, res) => {
-  assertAdmin(req);
-  const { userId } = req.params;
-  if (!isObjectId(userId))
-    throw new HttpError(400, "INVALID_ID", "Invalid user id");
-  if (String(userId) === String(req.user.id)) {
+  if (!title || !message)
     throw new HttpError(
-      422,
-      "CANNOT_SUSPEND_SELF",
-      "You cannot suspend your own account",
+      400,
+      "VALIDATION_ERROR",
+      "title and message are required",
     );
-  }
+  if (!["all", "students", "admins"].includes(target))
+    throw new HttpError(400, "VALIDATION_ERROR", "Invalid target");
 
-  const user = await User.findById(userId);
-  if (!user) throw new HttpError(404, "USER_NOT_FOUND", "User not found");
+  const filter = { status: "active" };
+  if (target === "students") filter.role = "student";
+  if (target === "admins") filter.role = "admin";
 
-  // Prevent suspending the last active admin
-  if (user.role === "admin") {
-    const activeAdmins = await User.countDocuments({
-      role: "admin",
-      status: "active",
+  const users = await User.find(filter).select("_id").lean();
+  if (users.length === 0)
+    return res.status(200).json({ success: true, data: { sent: 0 } });
+
+  let sentCount = 0;
+  for (const u of users) {
+    const notif = await createNotification({
+      user: u._id,
+      type: "admin_broadcast",
+      title,
+      message,
+      link,
+      priority,
+      is_broadcast: true,
     });
-    if (activeAdmins <= 1) {
-      throw new HttpError(
-        422,
-        "LAST_ADMIN",
-        "Cannot suspend the last active admin",
-      );
-    }
+    if (notif) sentCount++;
   }
-
-  user.status = "suspended";
-  await user.save();
-
-  res.locals.auditEntityId = user._id;
 
   return res.status(200).json({
     success: true,
-    data: { _id: user._id, status: user.status },
+    data: { sent: sentCount, target },
   });
 };
 
-// PATCH /api/admin/students/:userId/restore
-exports.restoreStudent = async (req, res) => {
-  assertAdmin(req);
-  const { userId } = req.params;
-  if (!isObjectId(userId))
-    throw new HttpError(400, "INVALID_ID", "Invalid user id");
+// ===== EXTERNAL INVITATIONS =====
+exports.listExternalInvites = async (req, res) => {
+  if (req.user.role !== "admin")
+    throw new HttpError(403, "FORBIDDEN", "Admin only");
 
-  const user = await User.findById(userId);
-  if (!user) throw new HttpError(404, "USER_NOT_FOUND", "User not found");
-
-  user.status = "active";
-  await user.save();
-
-  res.locals.auditEntityId = user._id;
-
-  return res.status(200).json({
-    success: true,
-    data: { _id: user._id, status: user.status },
-  });
-};
-
-// DELETE /api/admin/students/:userId — hard delete + cascade
-exports.hardDeleteStudent = async (req, res) => {
-  assertAdmin(req);
-  const { userId } = req.params;
-  if (!isObjectId(userId))
-    throw new HttpError(400, "INVALID_ID", "Invalid user id");
-  if (String(userId) === String(req.user.id)) {
-    throw new HttpError(
-      422,
-      "CANNOT_DELETE_SELF",
-      "You cannot delete your own account",
-    );
-  }
-
-  const user = await User.findById(userId);
-  if (!user) throw new HttpError(404, "USER_NOT_FOUND", "User not found");
-
-  if (user.role === "admin") {
-    const activeAdmins = await User.countDocuments({
-      role: "admin",
-      status: "active",
-    });
-    if (activeAdmins <= 1) {
-      throw new HttpError(
-        422,
-        "LAST_ADMIN",
-        "Cannot delete the last active admin",
-      );
-    }
-  }
-
-  // Cascade delete related rows
-  await Promise.all([
-    Skill.deleteMany({ user_id: userId }),
-    ClubMember.deleteMany({ user_id: userId }),
-    TeamMember.deleteMany({ user_id: userId }),
-    Enrollment.deleteMany({ user_id: userId }),
-    ClubApplication.deleteMany({ user_id: userId }),
-    ConversationMember.deleteMany({ user_id: userId }),
-  ]);
-
-  await User.deleteOne({ _id: userId });
-
-  return res.status(200).json({
-    success: true,
-    message: "User permanently deleted",
-  });
-};
-
-// ==================== CLUB ROLE MANAGEMENT ====================
-
-// POST /api/admin/clubs/:clubId/secretary  Body: { user_id }
-exports.assignSecretary = async (req, res) => {
-  assertAdmin(req);
-  const { clubId } = req.params;
-  if (!isObjectId(clubId))
-    throw new HttpError(400, "INVALID_ID", "Invalid club id");
-
-  const { user_id } = req.body || {};
-  if (!isObjectId(user_id)) {
-    throw new HttpError(400, "VALIDATION_ERROR", "user_id is required");
-  }
-
-  const [club, user] = await Promise.all([
-    Club.findById(clubId),
-    User.findById(user_id).select("name email status role").lean(),
-  ]);
-  if (!club) throw new HttpError(404, "CLUB_NOT_FOUND", "Club not found");
-  if (!user) throw new HttpError(404, "USER_NOT_FOUND", "User not found");
-  if (user.status !== "active") {
-    throw new HttpError(422, "INVALID_STATUS", "User is not active");
-  }
-
-  // Demote current secretary (if any) to core_member
-  if (club.secretary_id) {
-    await ClubMember.updateOne(
-      { club_id: clubId, user_id: club.secretary_id },
-      { $set: { role: "core_member" } },
-    );
-  }
-
-  // Upsert new secretary
-  await ClubMember.updateOne(
-    { club_id: clubId, user_id },
-    {
-      $set: {
-        club_id: clubId,
-        user_id,
-        role: "secretary",
-        status: "active",
-        joined_at: new Date(),
-      },
-    },
-    { upsert: true },
-  );
-
-  // Update club doc
-  club.secretary_id = user_id;
-  await club.save();
-
-  res.locals.auditEntityId = club._id;
-
-  return res.status(200).json({
-    success: true,
-    data: {
-      club_id: club._id,
-      secretary_id: user_id,
-      secretary_name: user.name,
-    },
-  });
-};
-
-// DELETE /api/admin/clubs/:clubId/secretary/:userId
-exports.removeSecretary = async (req, res) => {
-  assertAdmin(req);
-  const { clubId, userId } = req.params;
-  if (!isObjectId(clubId) || !isObjectId(userId)) {
-    throw new HttpError(400, "INVALID_ID", "Invalid id");
-  }
-
-  const club = await Club.findById(clubId);
-  if (!club) throw new HttpError(404, "CLUB_NOT_FOUND", "Club not found");
-
-  if (String(club.secretary_id) !== String(userId)) {
-    throw new HttpError(422, "NOT_SECRETARY", "This user is not the secretary");
-  }
-
-  // Downgrade to core_member
-  await ClubMember.updateOne(
-    { club_id: clubId, user_id: userId },
-    { $set: { role: "core_member" } },
-  );
-
-  club.secretary_id = null;
-  await club.save();
-
-  res.locals.auditEntityId = club._id;
-
-  return res.status(200).json({ success: true });
-};
-
-// POST /api/admin/clubs/:clubId/core-members  Body: { user_id }
-exports.addCoreMember = async (req, res) => {
-  assertAdmin(req);
-  const { clubId } = req.params;
-  if (!isObjectId(clubId))
-    throw new HttpError(400, "INVALID_ID", "Invalid club id");
-
-  const { user_id } = req.body || {};
-  if (!isObjectId(user_id)) {
-    throw new HttpError(400, "VALIDATION_ERROR", "user_id is required");
-  }
-
-  const [club, user] = await Promise.all([
-    Club.findById(clubId).select("_id").lean(),
-    User.findById(user_id).select("name email status").lean(),
-  ]);
-  if (!club) throw new HttpError(404, "CLUB_NOT_FOUND", "Club not found");
-  if (!user) throw new HttpError(404, "USER_NOT_FOUND", "User not found");
-  if (user.status !== "active") {
-    throw new HttpError(422, "INVALID_STATUS", "User is not active");
-  }
-
-  await ClubMember.updateOne(
-    { club_id: clubId, user_id },
-    {
-      $set: {
-        club_id: clubId,
-        user_id,
-        role: "core_member",
-        status: "active",
-        joined_at: new Date(),
-      },
-    },
-    { upsert: true },
-  );
-
-  res.locals.auditEntityId = club._id;
-
-  return res.status(200).json({
-    success: true,
-    data: { club_id: clubId, user_id, role: "core_member" },
-  });
-};
-
-// DELETE /api/admin/clubs/:clubId/core-members/:userId
-exports.removeCoreMember = async (req, res) => {
-  assertAdmin(req);
-  const { clubId, userId } = req.params;
-  if (!isObjectId(clubId) || !isObjectId(userId)) {
-    throw new HttpError(400, "INVALID_ID", "Invalid id");
-  }
-
-  const membership = await ClubMember.findOne({
-    club_id: clubId,
-    user_id: userId,
-    role: "core_member",
-    status: "active",
-  });
-  if (!membership) {
-    throw new HttpError(
-      404,
-      "MEMBERSHIP_NOT_FOUND",
-      "No active core membership found",
-    );
-  }
-
-  membership.status = "left";
-  membership.left_at = new Date();
-  await membership.save();
-
-  res.locals.auditEntityId = clubId;
-
-  return res.status(200).json({ success: true });
-};
-
-// GET /api/admin/clubs/:clubId/roles — list secretaries + core members + members
-exports.listClubRoles = async (req, res) => {
-  assertAdmin(req);
-  const { clubId } = req.params;
-  if (!isObjectId(clubId))
-    throw new HttpError(400, "INVALID_ID", "Invalid club id");
-
-  const club = await Club.findById(clubId)
-    .select("name display_name secretary_id")
-    .lean();
-  if (!club) throw new HttpError(404, "CLUB_NOT_FOUND", "Club not found");
-
-  const members = await ClubMember.find({
-    club_id: clubId,
-    status: "active",
-  })
-    .populate("user_id", "name email year batch status")
-    .sort({ role: 1, joined_at: 1 })
+  const invites = await ExternalInvitation.find({ status: "registered" })
+    .populate("registered_user_id", "name email year status")
+    .populate("team_id", "name")
+    .populate("invited_by", "name")
+    .sort({ createdAt: -1 })
     .lean();
 
-  const data = members.map((m) => ({
-    _id: m._id,
-    user_id: m.user_id?._id,
-    name: m.user_id?.name,
-    email: m.user_id?.email,
-    year: m.user_id?.year,
-    batch: m.user_id?.batch,
-    user_status: m.user_id?.status,
-    role: m.role,
-    joined_at: m.joined_at,
-  }));
+  res.status(200).json({ success: true, data: invites });
+};
 
-  return res.status(200).json({
-    success: true,
-    data: {
-      club: {
-        _id: club._id,
-        name: club.name,
-        display_name: club.display_name,
-        secretary_id: club.secretary_id,
-      },
-      members: data,
-    },
+exports.approveExternalInvite = async (req, res) => {
+  if (req.user.role !== "admin")
+    throw new HttpError(403, "FORBIDDEN", "Admin only");
+  const { inviteId } = req.params;
+
+  const invite = await ExternalInvitation.findById(inviteId);
+  if (!invite) throw new HttpError(404, "NOT_FOUND", "Invite not found");
+
+  invite.status = "approved";
+  invite.approved_by.push(req.user.id);
+  invite.approved_at = new Date();
+  await invite.save();
+
+  await User.findByIdAndUpdate(invite.registered_user_id, { status: "active" });
+
+  res.status(200).json({ success: true, message: "External user approved" });
+};
+
+exports.rejectExternalInvite = async (req, res) => {
+  if (req.user.role !== "admin")
+    throw new HttpError(403, "FORBIDDEN", "Admin only");
+  const { inviteId } = req.params;
+
+  const invite = await ExternalInvitation.findById(inviteId);
+  if (!invite) throw new HttpError(404, "NOT_FOUND", "Invite not found");
+
+  invite.status = "rejected";
+  invite.rejected_by.push(req.user.id);
+  await invite.save();
+
+  await User.findByIdAndUpdate(invite.registered_user_id, {
+    status: "suspended",
   });
+
+  res.status(200).json({ success: true, message: "External user rejected" });
 };

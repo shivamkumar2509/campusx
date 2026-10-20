@@ -17,26 +17,11 @@ const attachmentSchema = new mongoose.Schema(
       ref: "User",
       required: true,
     },
-    file_url: {
-      type: String,
-      required: true,
-    },
-    public_id: {
-      type: String,
-      default: "",
-    },
-    file_name: {
-      type: String,
-      default: "",
-    },
-    file_size: {
-      type: Number,
-      default: 0,
-    },
-    mime_type: {
-      type: String,
-      default: "",
-    },
+    file_url: { type: String, required: true },
+    public_id: { type: String, default: "" },
+    file_name: { type: String, default: "" },
+    file_size: { type: Number, default: 0 },
+    mime_type: { type: String, default: "" },
   },
   { timestamps: true },
 );

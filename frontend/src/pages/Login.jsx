@@ -38,6 +38,24 @@ export default function Login() {
     }
   };
 
+  const handleGoogle = async () => {
+    // Fake Google Login for demo (in prod use @react-oauth/google)
+    const dummyEmail = prompt("Enter your college email for Google Login:");
+    if (!dummyEmail) return;
+    try {
+      const { data } = await api.post("/auth/oauth/google", {
+        email: dummyEmail,
+        name: "Google User",
+        googleId: "12345",
+      });
+      localStorage.setItem("token", data.data.token);
+      localStorage.setItem("user", JSON.stringify(data.data.user));
+      navigate("/dashboard");
+    } catch (err) {
+      alert("Google login failed");
+    }
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
       <div className="bg-white p-8 rounded-xl shadow-md w-full max-w-md">
@@ -87,7 +105,20 @@ export default function Login() {
             {loading ? "Logging in..." : "Login"}
           </button>
         </form>
-
+        <div className="mt-4">
+          <button
+            type="button"
+            onClick={handleGoogle}
+            className="w-full border border-gray-300 text-gray-700 py-2 rounded-lg flex items-center justify-center gap-2 hover:bg-gray-50"
+          >
+            <img
+              src="https://www.svgrepo.com/show/475656/google-color.svg"
+              className="w-5 h-5"
+              alt="Google"
+            />
+            Continue with Google
+          </button>
+        </div>
         <p className="text-center text-sm text-gray-600 mt-4">
           Don't have an account?{" "}
           <Link to="/signup" className="text-indigo-600 hover:underline">

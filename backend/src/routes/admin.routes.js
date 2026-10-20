@@ -2,76 +2,134 @@ const express = require("express");
 const auth = require("../middleware/auth.middleware");
 const routeError = require("../middleware/routeError.middleware");
 const { audit } = require("../middleware/audit.middleware");
-const c = require("../controllers/admin.controller");
+const ac = require("../controllers/admin.controller");
+const cac = require("../controllers/clubAdmin.controller");
 
 const router = express.Router();
 
-// ===== Analytics =====
-router.get("/admin/analytics", auth, c.getAnalytics);
-router.get("/admin/analytics/export", auth, c.exportAnalytics);
-router.get("/admin/audit-logs", auth, c.listAuditLogs);
+// Analytics
+router.get("/admin/analytics", auth, ac.getAnalytics);
+router.get("/admin/audit-logs", auth, ac.getAuditLogs);
+router.get("/admin/analytics/export", auth, ac.exportAnalytics);
 
-// ===== Student management =====
-router.get("/admin/students", auth, c.listStudents);
-router.get("/admin/students/:userId", auth, c.getStudent);
+// User management
+router.get("/admin/students", auth, ac.listUsers);
 router.post(
-  "/admin/students",
+  "/admin/users",
   auth,
-  audit("admin.student.create", "User"),
-  c.createStudent,
+  audit("admin.user.create", "User"),
+  ac.createUser,
 );
 router.patch(
-  "/admin/students/:userId/approve",
+  "/admin/users/:userId/approve",
   auth,
-  audit("admin.student.approve", "User"),
-  c.approveStudent,
+  audit("admin.user.approve", "User"),
+  ac.approveUser,
 );
 router.patch(
-  "/admin/students/:userId/suspend",
+  "/admin/users/:userId/suspend",
   auth,
-  audit("admin.student.suspend", "User"),
-  c.suspendStudent,
+  audit("admin.user.suspend", "User"),
+  ac.suspendUser,
 );
 router.patch(
-  "/admin/students/:userId/restore",
+  "/admin/users/:userId/restore",
   auth,
-  audit("admin.student.restore", "User"),
-  c.restoreStudent,
+  audit("admin.user.restore", "User"),
+  ac.restoreUser,
 );
 router.delete(
-  "/admin/students/:userId",
+  "/admin/users/:userId",
   auth,
-  audit("admin.student.delete", "User"),
-  c.hardDeleteStudent,
+  audit("admin.user.delete", "User"),
+  ac.deleteUser,
 );
 
-// ===== Club role management =====
-router.get("/admin/clubs/:clubId/roles", auth, c.listClubRoles);
+// Broadcast notification
 router.post(
+  "/admin/notifications/broadcast",
+  auth,
+  audit("admin.notify.broadcast", "Notification"),
+  ac.broadcastNotification,
+);
+
+// Club CRUD
+router.post(
+  "/admin/clubs",
+  auth,
+  audit("admin.club.create", "Club"),
+  cac.createClub,
+);
+router.patch(
+  "/admin/clubs/:clubId",
+  auth,
+  audit("admin.club.update", "Club"),
+  cac.updateClub,
+);
+router.delete(
+  "/admin/clubs/:clubId",
+  auth,
+  audit("admin.club.delete", "Club"),
+  cac.deleteClub,
+);
+router.get("/admin/clubs/:clubId/roles", auth, cac.getClubRoles);
+router.patch(
   "/admin/clubs/:clubId/secretary",
   auth,
-  audit("admin.club.secretary.assign", "Club"),
-  c.assignSecretary,
+  audit("admin.club.assign_secretary", "Club"),
+  cac.assignSecretary,
 );
 router.delete(
-  "/admin/clubs/:clubId/secretary/:userId",
+  "/admin/clubs/:clubId/secretary",
   auth,
-  audit("admin.club.secretary.remove", "Club"),
-  c.removeSecretary,
+  audit("admin.club.remove_secretary", "Club"),
+  cac.removeSecretary,
 );
 router.post(
   "/admin/clubs/:clubId/core-members",
   auth,
-  audit("admin.club.core_member.add", "Club"),
-  c.addCoreMember,
+  audit("admin.club.add_core", "Club"),
+  cac.addCoreMember,
 );
 router.delete(
   "/admin/clubs/:clubId/core-members/:userId",
   auth,
-  audit("admin.club.core_member.remove", "Club"),
-  c.removeCoreMember,
+  audit("admin.club.remove_core", "Club"),
+  cac.removeCoreMember,
 );
 
-router.use(routeError);
+// Rename request (approve/reject by admin)
+router.patch(
+  "/admin/clubs/:clubId/rename-request/approve",
+  auth,
+  audit("admin.club.rename.approve", "Club"),
+  cac.approveRename,
+);
+router.patch(
+  "/admin/clubs/:clubId/rename-request/reject",
+  auth,
+  audit("admin.club.rename.reject", "Club"),
+  cac.rejectRename,
+);
 
+// External Invitations
+router.get("/admin/external-invitations", auth, ac.listExternalInvites);
+router.patch(
+  "/admin/external-invitations/:inviteId/approve",
+  auth,
+  ac.approveExternalInvite,
+);
+router.patch(
+  "/admin/external-invitations/:inviteId/reject",
+  auth,
+  ac.rejectExternalInvite,
+);
+
+router.delete(
+  "/admin/clubs/:clubId/secretary",
+  auth,
+  audit("admin.club.remove_secretary", "Club"),
+  cac.removeSecretary,
+);
+router.use(routeError);
 module.exports = router;

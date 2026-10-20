@@ -456,3 +456,104 @@ exports.toggleHiddenLanguage = async (req, res) => {
     });
   }
 };
+
+// GET /api/users/:userId — public profile view (any logged-in user)
+exports.getUserProfile = async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    const { isObjectId } = require("../utils/queryHelpers");
+    if (!isObjectId(userId)) {
+      return res.status(400).json({
+        success: false,
+        error_code: "INVALID_ID",
+        message: "Invalid user id",
+      });
+    }
+
+    const user = await User.findById(userId).select(
+      "name email avatar_url year experience_level availability github_username github_url linkedin_url codeforces_username github_data github_verified_at role college",
+    );
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        error_code: "USER_NOT_FOUND",
+        message: "User not found",
+      });
+    }
+
+    // Skills
+    const skills = await Skill.find({ user_id: userId })
+      .select("skill_name proficiency is_technical verified source")
+      .lean();
+
+    // Club roles
+    const ClubMember = require("../models/clubMember.model");
+    const clubMemberships = await ClubMember.find({
+      user_id: userId,
+      status: "active",
+    })
+      .populate("club_id", "name display_name type")
+      .select("role club_id")
+      .lean();
+
+    const clubs = clubMemberships
+      .filter((m) => m.club_id)
+      .map((m) => ({
+        _id: m.club_id._id,
+        name: m.club_id.name,
+        display_name: m.club_id.display_name,
+        type: m.club_id.type,
+        role: m.role,
+      }));
+
+    // Hide hidden languages from GitHub data
+    const githubData = user.github_data
+      ? {
+          ...(user.github_data.toObject?.() || user.github_data),
+        }
+      : null;
+
+    if (githubData && Array.isArray(githubData.hidden_languages)) {
+      const hidden = githubData.hidden_languages;
+      if (Array.isArray(githubData.all_languages)) {
+        githubData.all_languages = githubData.all_languages.filter(
+          (l) => !hidden.includes(l),
+        );
+      }
+      if (Array.isArray(githubData.top_languages)) {
+        githubData.top_languages = githubData.top_languages.filter(
+          (l) => !hidden.includes(l),
+        );
+      }
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        _id: user._id,
+        name: user.name,
+        avatar_url: user.avatar_url || null,
+        year: user.year,
+        experience_level: user.experience_level || null,
+        availability: user.availability || null,
+        github_username: user.github_username || null,
+        github_url: user.github_url || null,
+        linkedin_url: user.linkedin_url || null,
+        codeforces_username: user.codeforces_username || null,
+        github_verified_at: user.github_verified_at || null,
+        github_data: githubData,
+        skills,
+        clubs,
+      },
+    });
+  } catch (err) {
+    console.error("getUserProfile error:", err);
+    res.status(500).json({
+      success: false,
+      error_code: "SERVER_ERROR",
+      message: "Something went wrong",
+    });
+  }
+};

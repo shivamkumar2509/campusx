@@ -1,67 +1,67 @@
 import api from "./axios";
 
 export const fetchAnalytics = () =>
-  api.get("/admin/analytics").then((r) => r.data);
+  api.get("/admin/analytics").then((r) => r.data.data);
 
 export const fetchAuditLogs = (params = {}) =>
   api.get("/admin/audit-logs", { params }).then((r) => r.data);
 
-export const exportAnalyticsCSV = async () => {
+export const exportAnalyticsCsv = async () => {
   const res = await api.get("/admin/analytics/export", {
     responseType: "blob",
   });
-
-  const cd = res.headers["content-disposition"] || "";
-  const match = /filename="([^"]+)"/.exec(cd);
-  const filename =
-    (match && match[1]) ||
-    `campusx-admin-export-${new Date().toISOString().slice(0, 10)}.csv`;
-
   const url = window.URL.createObjectURL(new Blob([res.data]));
   const a = document.createElement("a");
   a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
+  a.download = "campusx-analytics.csv";
   a.click();
-  a.remove();
   window.URL.revokeObjectURL(url);
-
-  return filename;
 };
 
-// ===== Students =====
+// ===== USER MANAGEMENT =====
 export const fetchStudents = (params = {}) =>
   api.get("/admin/students", { params }).then((r) => r.data);
 
-export const fetchStudentDetail = (userId) =>
-  api.get(`/admin/students/${userId}`).then((r) => r.data);
-
 export const createStudent = (body) =>
-  api.post("/admin/students", body).then((r) => r.data);
+  api.post("/admin/users", body).then((r) => r.data);
 
-export const approveStudent = (userId) =>
-  api.patch(`/admin/students/${userId}/approve`).then((r) => r.data);
+export const approveUser = (userId) =>
+  api.patch(`/admin/users/${userId}/approve`).then((r) => r.data);
 
-export const suspendStudent = (userId) =>
-  api.patch(`/admin/students/${userId}/suspend`).then((r) => r.data);
+export const suspendUser = (userId) =>
+  api.patch(`/admin/users/${userId}/suspend`).then((r) => r.data);
 
-export const restoreStudent = (userId) =>
-  api.patch(`/admin/students/${userId}/restore`).then((r) => r.data);
+export const restoreUser = (userId) =>
+  api.patch(`/admin/users/${userId}/restore`).then((r) => r.data);
 
-export const deleteStudent = (userId) =>
-  api.delete(`/admin/students/${userId}`).then((r) => r.data);
+export const deleteUser = (userId) =>
+  api.delete(`/admin/users/${userId}`).then((r) => r.data);
 
-// ===== Club roles =====
+export const broadcastNotification = (body) =>
+  api.post("/admin/notifications/broadcast", body).then((r) => r.data);
+
+// ===== CLUB CRUD =====
+export const createClub = (body) =>
+  api.post("/admin/clubs", body).then((r) => r.data.data);
+
+export const updateClub = (clubId, body) =>
+  api.patch(`/admin/clubs/${clubId}`, body).then((r) => r.data.data);
+
+export const deleteClub = (clubId) =>
+  api.delete(`/admin/clubs/${clubId}`).then((r) => r.data);
+
 export const fetchClubRoles = (clubId) =>
   api.get(`/admin/clubs/${clubId}/roles`).then((r) => r.data);
 
 export const assignSecretary = (clubId, userId) =>
   api
-    .post(`/admin/clubs/${clubId}/secretary`, { user_id: userId })
+    .patch(`/admin/clubs/${clubId}/secretary`, { user_id: userId })
     .then((r) => r.data);
 
 export const removeSecretary = (clubId, userId) =>
-  api.delete(`/admin/clubs/${clubId}/secretary/${userId}`).then((r) => r.data);
+  api
+    .delete(`/admin/clubs/${clubId}/secretary`, { data: { user_id: userId } })
+    .then((r) => r.data);
 
 export const addCoreMember = (clubId, userId) =>
   api
@@ -72,3 +72,9 @@ export const removeCoreMember = (clubId, userId) =>
   api
     .delete(`/admin/clubs/${clubId}/core-members/${userId}`)
     .then((r) => r.data);
+export const fetchExternalInvites = () =>
+  api.get("/admin/external-invitations").then((r) => r.data.data);
+export const approveExternalInvite = (id) =>
+  api.patch(`/admin/external-invitations/${id}/approve`).then((r) => r.data);
+export const rejectExternalInvite = (id) =>
+  api.patch(`/admin/external-invitations/${id}/reject`).then((r) => r.data);

@@ -12,10 +12,7 @@ const messageSchema = new mongoose.Schema(
       ref: "User",
       required: true,
     },
-    content: {
-      type: String,
-      required: true,
-    },
+    content: { type: String, required: true },
     type: {
       type: String,
       enum: ["text", "image", "file"],
@@ -26,14 +23,8 @@ const messageSchema = new mongoose.Schema(
       ref: "Message",
       default: null,
     },
-    edited: {
-      type: Boolean,
-      default: false,
-    },
-    deleted: {
-      type: Boolean,
-      default: false,
-    },
+    edited: { type: Boolean, default: false },
+    deleted: { type: Boolean, default: false },
   },
   { timestamps: true },
 );

@@ -1,32 +1,25 @@
 const express = require("express");
 const auth = require("../middleware/auth.middleware");
 const routeError = require("../middleware/routeError.middleware");
-const { audit } = require("../middleware/audit.middleware");
-const c = require("../controllers/chat.controller");
+const conv = require("../controllers/conversation.controller");
+const msg = require("../controllers/message.controller");
 
 const router = express.Router();
 
-router.get("/conversations/:convId/messages", auth, c.listMessages);
-router.post(
-  "/conversations/:convId/messages",
-  auth,
-  audit("chat.message.send", "Message"),
-  c.sendMessage,
-);
-router.post("/conversations/:convId/read", auth, c.markConversationRead);
-router.post(
-  "/conversations/:convId/attachments",
-  auth,
-  audit("chat.attachment.add", "Attachment"),
-  c.addAttachment,
-);
-router.patch(
-  "/messages/:messageId",
-  auth,
-  audit("chat.message.edit", "Message"),
-  c.editMessage,
-);
+// Conversations
+router.get("/conversations", auth, conv.listMyConversations);
+router.get("/teams/:teamId/conversation", auth, conv.getTeamConversation);
+router.get("/conversations/:convId/messages", auth, conv.listMessages);
+router.patch("/conversations/:convId/mute", auth, conv.toggleMute);
+
+// Messages
+router.post("/conversations/:convId/messages", auth, msg.sendMessage);
+router.patch("/messages/:messageId", auth, msg.editMessage);
+router.delete("/messages/:messageId", auth, msg.deleteMessage);
+
+// Attachments on message
+router.post("/messages/:messageId/attachments", auth, msg.attachToMessage);
+router.get("/messages/:messageId/attachments", auth, msg.listAttachments);
 
 router.use(routeError);
-
 module.exports = router;

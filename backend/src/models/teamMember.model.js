@@ -12,23 +12,14 @@ const teamMemberSchema = new mongoose.Schema(
       ref: "User",
       required: true,
     },
-    role: {
-      type: String,
-      default: "member",
-    },
-    joined_at: {
-      type: Date,
-      default: Date.now,
-    },
+    role: { type: String, default: "member" },
+    joined_at: { type: Date, default: Date.now },
     status: {
       type: String,
       enum: ["invited", "accepted", "declined", "left"],
       default: "invited",
     },
-    left_at: {
-      type: Date,
-      default: null,
-    },
+    left_at: { type: Date, default: null },
   },
   { timestamps: true },
 );

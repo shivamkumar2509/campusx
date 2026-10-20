@@ -1,10 +1,10 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 
 const notificationPreferenceSchema = new mongoose.Schema(
   {
     user_id: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'User',
+      ref: "User",
       required: true,
       unique: true,
     },
@@ -33,10 +33,13 @@ const notificationPreferenceSchema = new mongoose.Schema(
       default: true,
     },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 // Indexes
-notificationPreferenceSchema.index({ user_id: 1 }, { unique: true });
+// notificationPreferenceSchema.index({ user_id: 1 }, { unique: true });
 
-module.exports = mongoose.model('NotificationPreference', notificationPreferenceSchema);
+module.exports = mongoose.model(
+  "NotificationPreference",
+  notificationPreferenceSchema,
+);

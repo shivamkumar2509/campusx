@@ -1,18 +1,17 @@
 import api from "./axios";
 
-export async function fetchReplacements(teamId) {
-  const { data } = await api.get(`/teams/${teamId}/replacements`);
-  return data.data;
-}
+export const fetchReplacements = (teamId) =>
+  api.get(`/teams/${teamId}/replacements`).then((r) => r.data.data);
 
-export async function findReplacement(teamId, body) {
-  const { data } = await api.post(`/teams/${teamId}/find-replacement`, body);
-  return data.data;
-}
+export const findReplacement = (teamId, body = {}) =>
+  api.post(`/teams/${teamId}/find-replacement`, body).then((r) => r.data.data);
 
-export async function inviteReplacement(teamId, suggestionId) {
-  const { data } = await api.post(
-    `/teams/${teamId}/replacements/${suggestionId}/invite`
-  );
-  return data.data;
-}
+export const inviteReplacement = (teamId, suggestionId) =>
+  api
+    .post(`/teams/${teamId}/replacements/${suggestionId}/invite`)
+    .then((r) => r.data.data);
+
+export const respondToInvitation = (teamId, invitationId, response) =>
+  api
+    .post(`/teams/${teamId}/invitations/${invitationId}/respond`, { response })
+    .then((r) => r.data.data);

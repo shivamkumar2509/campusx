@@ -75,6 +75,11 @@ const userSchema = new mongoose.Schema(
     codeforces_username: {
       type: String,
     },
+    branch: {
+      type: String,
+      default: "",
+      trim: true,
+    },
     github_data: {
       public_repos: { type: Number },
       followers: { type: Number },
@@ -102,6 +107,8 @@ const userSchema = new mongoose.Schema(
     github_verified_at: {
       type: Date,
     },
+    reset_password_token: { type: String },
+    reset_password_expires: { type: Date },
   },
   { timestamps: true },
 );
