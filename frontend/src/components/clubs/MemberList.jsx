@@ -1,15 +1,16 @@
+import { Link } from "react-router-dom";
 import { avatarUrl } from "../../utils/clubHelpers";
 
 const GROUPS = [
   { role: "secretary", title: "Secretary" },
-  { role: "core_member", title: "Core Members" },
+  { role: "core_member", title: "Joint Secretary / Core" },
   { role: "member", title: "Members" },
 ];
 
 function MemberCard({ member }) {
   const name = member.name || "Unknown member";
-  return (
-    <div className="bg-white rounded-xl border shadow-sm p-4 flex items-center gap-3">
+  const content = (
+    <div className="bg-white rounded-xl border shadow-sm p-4 flex items-center gap-3 hover:shadow-md hover:border-indigo-300 transition">
       <img
         src={avatarUrl(name)}
         alt={name}
@@ -23,6 +24,15 @@ function MemberCard({ member }) {
       </div>
     </div>
   );
+
+  if (member.user_id) {
+    return (
+      <Link to={`/users/${member.user_id}`} target="_blank">
+        {content}
+      </Link>
+    );
+  }
+  return content;
 }
 
 export default function MemberList({ members }) {

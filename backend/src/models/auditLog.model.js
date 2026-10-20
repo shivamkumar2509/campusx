@@ -7,26 +7,11 @@ const auditLogSchema = new mongoose.Schema(
       ref: "User",
       required: true,
     },
-    action: {
-      type: String,
-      required: true,
-    },
-    entity_type: {
-      type: String,
-      default: "",
-    },
-    entity_id: {
-      type: mongoose.Schema.Types.ObjectId,
-      default: null,
-    },
-    ip_address: {
-      type: String,
-      default: "",
-    },
-    metadata: {
-      type: Object,
-      default: {},
-    },
+    action: { type: String, required: true },
+    entity_type: { type: String, default: "" },
+    entity_id: { type: mongoose.Schema.Types.ObjectId, default: null },
+    ip_address: { type: String, default: "" },
+    metadata: { type: Object, default: {} },
   },
   { timestamps: true },
 );

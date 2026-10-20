@@ -50,4 +50,8 @@ router.delete(
   deleteSkill,
 );
 
+const { getUserProfile } = require("../controllers/user.controller");
+
+// Existing routes ke baad, module.exports se pehle:
+router.get("/:userId", auth, getUserProfile);
 module.exports = router;

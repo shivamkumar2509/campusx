@@ -7,27 +7,14 @@ const suggestionSchema = new mongoose.Schema(
       ref: "Event",
       required: true,
     },
-    team_members: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "User",
-      },
-    ],
+    team_members: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
     leader_candidate: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       required: true,
     },
-    score: {
-      type: Number,
-      min: 0,
-      max: 1,
-      default: 0,
-    },
-    reasoning: {
-      type: String,
-      default: "",
-    },
+    score: { type: Number, min: 0, max: 1, default: 0 },
+    reasoning: { type: String, default: "" },
     status: {
       type: String,
       enum: ["pending", "accepted", "rejected"],

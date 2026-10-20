@@ -8,6 +8,7 @@ import { clearSession, getErrorInfo } from "../utils/clubHelpers";
 import LeaderElection from "../components/team/LeaderElection";
 import LeaveRequestTab from "../components/team/LeaveRequestTab";
 import ReplacementTab from "../components/team/ReplacementTab";
+import TasksTab from "../components/team/TasksTab";
 
 const TABS = [
   { key: "chat", label: "💬 Chat", requiresConfirmed: true },
@@ -235,7 +236,9 @@ export default function TeamDashboard() {
       {/* ===== TAB CONTENT ===== */}
       <div className="mt-6">
         {effectiveTab === "chat" && <ChatTab teamId={teamId} />}
-        {effectiveTab === "tasks" && <TasksTab teamId={teamId} />}
+        {effectiveTab === "tasks" && (
+          <TasksTab teamId={teamId} members={membersData} />
+        )}
         {effectiveTab === "voting" && (
           <LeaderElection
             teamId={teamId}
@@ -274,21 +277,6 @@ function ChatTab({ teamId }) {
       >
         Open Chat →
       </Link>
-    </div>
-  );
-}
-
-/* ===== TASKS TAB (placeholder - Raghav will implement full) ===== */
-function TasksTab({ teamId }) {
-  // Kept minimal — Raghav's real tasks implementation replaces this later
-  return (
-    <div className="bg-white rounded-xl shadow-sm border p-6">
-      <h2 className="text-xl font-bold mb-4">📋 Tasks</h2>
-      <div className="text-center py-12 text-gray-500">
-        <p className="text-4xl mb-3">📋</p>
-        <p className="font-medium">Kanban board coming soon</p>
-        <p className="text-sm mt-1">Raghav will implement this</p>
-      </div>
     </div>
   );
 }

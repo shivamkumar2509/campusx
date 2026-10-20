@@ -12,18 +12,9 @@ const conversationMemberSchema = new mongoose.Schema(
       ref: "User",
       required: true,
     },
-    joined_at: {
-      type: Date,
-      default: Date.now,
-    },
-    last_read_at: {
-      type: Date,
-      default: null,
-    },
-    muted: {
-      type: Boolean,
-      default: false,
-    },
+    joined_at: { type: Date, default: Date.now },
+    last_read_at: { type: Date, default: null },
+    muted: { type: Boolean, default: false },
     status: {
       type: String,
       enum: ["active", "removed"],

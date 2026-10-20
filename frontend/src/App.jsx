@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Landing from "./pages/Landing";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
+import ForgotPassword from "./pages/ForgotPassword";
 import Dashboard from "./pages/Dashboard";
 import Profile from "./pages/Profile";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -10,9 +11,18 @@ import ClubDetail from "./pages/ClubDetail";
 import Recruitment from "./pages/Recruitment";
 import Notifications from "./pages/Notifications";
 import Search from "./pages/Search";
+import Events from "./pages/Events";
+import EventDetail from "./pages/EventDetail";
+import Matching from "./pages/Matching";
+import TeamDashboard from "./pages/TeamDashboard";
 import Chat from "./pages/Chat";
-import ChangePassword from "./pages/ChangePassword";
 import AdminDashboard from "./pages/AdminDashboard";
+import ExternalInvite from "./pages/ExternalInvite";
+import ClubJoinRequests from "./pages/ClubJoinRequests";
+import AdminClubs from "./pages/AdminClubs";
+import AdminBroadcast from "./pages/AdminBroadcast";
+import AdminUsers from "./pages/AdminUsers";
+import AdminExternalInvites from "./pages/AdminExternalInvites";
 
 function App() {
   return (
@@ -21,15 +31,7 @@ function App() {
         <Route path="/" element={<Landing />} />
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
-
-        <Route
-          path="/change-password"
-          element={
-            <ProtectedRoute>
-              <ChangePassword />
-            </ProtectedRoute>
-          }
-        />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
 
         <Route
           path="/dashboard"
@@ -88,6 +90,55 @@ function App() {
           }
         />
         <Route
+          path="/admin/users"
+          element={
+            <ProtectedRoute>
+              <AdminUsers />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/events"
+          element={
+            <ProtectedRoute>
+              <Events />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/events/:eventId"
+          element={
+            <ProtectedRoute>
+              <EventDetail />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/matching"
+          element={
+            <ProtectedRoute>
+              <Matching />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/teams/:teamId"
+          element={
+            <ProtectedRoute>
+              <TeamDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/clubs/:clubId/join-requests"
+          element={
+            <ProtectedRoute>
+              <ClubJoinRequests />
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="/teams/:teamId/chat"
           element={
             <ProtectedRoute>
@@ -96,10 +147,44 @@ function App() {
           }
         />
         <Route
+          path="/teams/:teamId/external-invite"
+          element={
+            <ProtectedRoute>
+              <ExternalInvite />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
           path="/admin/dashboard"
           element={
             <ProtectedRoute>
               <AdminDashboard />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/admin/clubs"
+          element={
+            <ProtectedRoute>
+              <AdminClubs />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/broadcast"
+          element={
+            <ProtectedRoute>
+              <AdminBroadcast />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/external-invites"
+          element={
+            <ProtectedRoute>
+              <AdminExternalInvites />
             </ProtectedRoute>
           }
         />

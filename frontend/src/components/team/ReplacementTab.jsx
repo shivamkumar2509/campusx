@@ -9,52 +9,49 @@ import { ErrorState, LoadingBlock, EmptyState } from "../common/StateViews";
 
 export default function ReplacementTab({ teamId, members }) {
   const replacements = useApiData(() => fetchReplacements(teamId), [teamId]);
-  const [finding, setFinding] = useState(false);
-  const [invitingId, setInvitingId] = useState(null);
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
-  const [selectedReplacing, setSelectedReplacing] = useState("");
+  const [searching, setSearching] = useState(false);
+  const [inviting, setInviting] = useState(null);
+  const [actionError, setActionError] = useState("");
+  const [selectedMember, setSelectedMember] = useState("");
 
-  const handleFindReplacement = async () => {
-    setFinding(true);
-    setError("");
-    setSuccess("");
+  const acceptedMembers = (members || []).filter(
+    (m) => m.status === "accepted",
+  );
+
+  const handleFind = async () => {
+    setActionError("");
+    setSearching(true);
     try {
-      const results = await findReplacement(teamId, {
-        replacing_user_id: selectedReplacing || undefined,
+      await findReplacement(teamId, {
+        replacing_user_id: selectedMember || undefined,
       });
-      if (results.length === 0) {
-        setSuccess("No suitable candidates found right now.");
-      } else {
-        setSuccess(`Found ${results.length} replacement candidates!`);
-      }
       replacements.reload();
     } catch (err) {
-      setError(err.response?.data?.message || "Failed to find replacements");
+      setActionError(
+        err.response?.data?.message || "Failed to find replacements",
+      );
     } finally {
-      setFinding(false);
+      setSearching(false);
     }
   };
 
   const handleInvite = async (suggestionId) => {
-    setInvitingId(suggestionId);
-    setError("");
-    setSuccess("");
+    setActionError("");
+    setInviting(suggestionId);
     try {
       await inviteReplacement(teamId, suggestionId);
-      setSuccess("Invitation sent successfully!");
       replacements.reload();
     } catch (err) {
-      setError(err.response?.data?.message || "Failed to send invite");
+      setActionError(err.response?.data?.message || "Failed to invite");
     } finally {
-      setInvitingId(null);
+      setInviting(null);
     }
   };
 
   if (replacements.loading) {
     return (
-      <div className="bg-white rounded-xl shadow-sm border p-6">
-        <LoadingBlock lines={4} />
+      <div className="bg-white rounded-xl border p-6">
+        <LoadingBlock lines={3} />
       </div>
     );
   }
@@ -68,132 +65,103 @@ export default function ReplacementTab({ teamId, members }) {
     );
   }
 
-  const suggestions = replacements.data || [];
-  const activeMembers = members.filter((m) => m.status === "accepted");
+  const items = replacements.data || [];
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="bg-white rounded-xl shadow-sm border p-6">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <h2 className="text-xl font-bold">🔄 Find Replacement</h2>
-            <p className="text-sm text-gray-500 mt-1">
-              AI-powered candidate matching for your team
-            </p>
-          </div>
-        </div>
-
-        {error && (
-          <p className="mt-3 text-sm text-red-700 bg-red-50 px-3 py-2 rounded-lg">
-            {error}
-          </p>
-        )}
-        {success && (
-          <p className="mt-3 text-sm text-green-700 bg-green-50 px-3 py-2 rounded-lg">
-            {success}
-          </p>
-        )}
-
-        {/* Find replacement form */}
-        <div className="mt-4 flex flex-wrap items-end gap-3">
-          <div>
-            <label className="block text-sm font-semibold mb-1">
-              Replacing member (optional)
-            </label>
-            <select
-              value={selectedReplacing}
-              onChange={(e) => setSelectedReplacing(e.target.value)}
-              className="border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            >
-              <option value="">Any open position</option>
-              {activeMembers.map((m) => (
-                <option key={m._id} value={m.user_id}>
-                  {m.name}
-                </option>
-              ))}
-            </select>
-          </div>
-          <button
-            onClick={handleFindReplacement}
-            disabled={finding}
-            className="bg-indigo-600 text-white px-5 py-2 rounded-lg hover:bg-indigo-700 text-sm font-semibold disabled:opacity-50"
-          >
-            {finding ? "Searching..." : "🤖 Find Candidates"}
-          </button>
-        </div>
+    <div className="bg-white rounded-xl border p-6 space-y-5">
+      <div>
+        <h2 className="text-xl font-bold">🔄 Find Replacement</h2>
+        <p className="text-sm text-gray-600 mt-1">
+          AI will suggest the best available candidates for your team.
+        </p>
       </div>
 
-      {/* Suggestions */}
-      {suggestions.length > 0 && (
-        <div className="bg-white rounded-xl shadow-sm border p-6">
-          <h3 className="font-bold mb-4 text-lg">
-            Suggested Candidates ({suggestions.length})
-          </h3>
-          <div className="grid sm:grid-cols-2 gap-4">
-            {suggestions.map((s) => (
-              <div
-                key={s._id}
-                className="border rounded-xl p-4 hover:shadow-md transition"
-              >
+      {actionError && (
+        <p className="text-sm bg-red-50 text-red-700 border border-red-200 rounded px-3 py-2">
+          {actionError}
+        </p>
+      )}
+
+      <div className="bg-gray-50 rounded-lg p-4 flex flex-wrap items-center gap-3">
+        <select
+          value={selectedMember}
+          onChange={(e) => setSelectedMember(e.target.value)}
+          className="border rounded-lg px-3 py-2 text-sm bg-white"
+        >
+          <option value="">(No one leaving — just find best fits)</option>
+          {acceptedMembers.map((m) => (
+            <option key={m._id} value={m.user_id}>
+              {m.name} is leaving
+            </option>
+          ))}
+        </select>
+        <button
+          onClick={handleFind}
+          disabled={searching}
+          className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 disabled:opacity-60 text-sm font-semibold"
+        >
+          {searching ? "Searching..." : "🔍 Find Replacements"}
+        </button>
+      </div>
+
+      {items.length === 0 ? (
+        <EmptyState
+          icon="🔍"
+          title="No suggestions"
+          message="Click 'Find Replacements' to search for candidates."
+        />
+      ) : (
+        <ul className="space-y-3">
+          {items.map((s) => (
+            <li key={s._id} className="border rounded-lg p-4">
+              <div className="flex items-start justify-between gap-3">
                 <div className="flex items-start gap-3">
                   <img
                     src={
                       s.candidate_id?.avatar_url ||
-                      `https://ui-avatars.com/api/?name=${encodeURIComponent(s.candidate_id?.name || "?")}&background=6366f1&color=fff&size=48`
+                      `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                        s.candidate_id?.name || "U",
+                      )}&size=40&background=6366f1&color=fff`
                     }
-                    alt={s.candidate_id?.name}
-                    className="w-12 h-12 rounded-full"
+                    alt=""
+                    className="w-10 h-10 rounded-full"
                   />
-                  <div className="flex-1">
-                    <div className="flex items-center justify-between">
-                      <p className="font-semibold">{s.candidate_id?.name}</p>
-                      <span className="text-sm font-bold text-indigo-600">
-                        {Math.round(s.score * 100)}%
-                      </span>
-                    </div>
+                  <div>
+                    <p className="font-semibold">{s.candidate_id?.name}</p>
                     <p className="text-xs text-gray-500">
-                      Year {s.candidate_id?.year} ·{" "}
+                      Year {s.candidate_id?.year || "?"} ·{" "}
                       {s.candidate_id?.experience_level || "beginner"}
                     </p>
+                    {s.reasoning && (
+                      <p className="text-sm text-gray-600 mt-1">
+                        {s.reasoning}
+                      </p>
+                    )}
                   </div>
                 </div>
-
-                {s.reasoning && (
-                  <p className="mt-3 text-xs text-gray-600 bg-gray-50 p-2 rounded">
-                    {s.reasoning}
+                <div className="text-right">
+                  <p className="text-lg font-bold text-indigo-600">
+                    {Math.round((s.score || 0) * 100)}%
                   </p>
-                )}
-
-                {s.role_needed && (
-                  <p className="mt-2 text-xs text-gray-500">
-                    Role: {s.role_needed}
-                  </p>
-                )}
-
+                  <p className="text-xs text-gray-500">match</p>
+                </div>
+              </div>
+              <div className="mt-3 flex justify-end">
                 <button
                   onClick={() => handleInvite(s._id)}
-                  disabled={invitingId === s._id || s.status === "accepted"}
-                  className="mt-3 w-full bg-indigo-600 text-white py-2 rounded-lg hover:bg-indigo-700 text-sm font-semibold disabled:opacity-50"
+                  disabled={inviting === s._id || s.status !== "pending"}
+                  className="bg-indigo-600 text-white px-4 py-1.5 rounded-lg text-sm hover:bg-indigo-700 disabled:opacity-60 font-medium"
                 >
-                  {s.status === "accepted"
-                    ? "✅ Invited"
-                    : invitingId === s._id
-                      ? "Sending..."
-                      : "📩 Send Invite"}
+                  {s.status !== "pending"
+                    ? s.status
+                    : inviting === s._id
+                      ? "Inviting..."
+                      : "Send Invitation"}
                 </button>
               </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {suggestions.length === 0 && (
-        <EmptyState
-          icon="🔄"
-          title="No replacements yet"
-          message='Click "Find Candidates" to search for suitable team members.'
-        />
+            </li>
+          ))}
+        </ul>
       )}
     </div>
   );

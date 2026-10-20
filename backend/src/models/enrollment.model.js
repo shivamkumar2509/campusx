@@ -12,10 +12,7 @@ const enrollmentSchema = new mongoose.Schema(
       ref: "Event",
       required: true,
     },
-    raised_at: {
-      type: Date,
-      default: Date.now,
-    },
+    raised_at: { type: Date, default: Date.now },
     status: {
       type: String,
       enum: ["pending", "matched", "cancelled"],

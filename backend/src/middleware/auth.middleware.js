@@ -1,18 +1,21 @@
 const { verifyToken } = require("../utils/jwt");
 
 module.exports = (req, res, next) => {
-  const header = req.headers.authorization;
-  if (!header || !header.startsWith("Bearer ")) {
-    return res.status(401).json({
-      success: false,
-      error_code: "NO_TOKEN",
-      message: "Authorization token missing",
-    });
-  }
-
   try {
-    const token = header.split(" ")[1];
-    req.user = verifyToken(token);
+    const header = req.headers.authorization || "";
+    const [scheme, token] = header.split(" ");
+
+    if (scheme !== "Bearer" || !token) {
+      return res.status(401).json({
+        success: false,
+        error_code: "UNAUTHORIZED",
+        message: "Missing or invalid authorization header",
+      });
+    }
+
+    const decoded = verifyToken(token);
+    // Controllers expect req.user = { id, role }
+    req.user = { id: decoded.id, role: decoded.role };
     next();
   } catch (err) {
     return res.status(401).json({

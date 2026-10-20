@@ -2,6 +2,7 @@ const bcrypt = require("bcryptjs");
 const crypto = require("crypto");
 const User = require("../models/user.model");
 const { signToken } = require("../utils/jwt");
+// const nodemailer = require("nodemailer");
 
 // Allowed college email domains
 const ALLOWED_DOMAINS = ["@iiitv.ac.in", "@iiitvadodara.ac.in"];
@@ -9,7 +10,24 @@ const ALLOWED_DOMAINS = ["@iiitv.ac.in", "@iiitvadodara.ac.in"];
 // POST /api/auth/signup
 exports.signup = async (req, res) => {
   try {
-    const { name, email, password, year, batch } = req.body;
+    const { name, email, password, year, batch, branch, role, admin_code } =
+      req.body;
+
+    // ✅ isAdminSignup variable wapas add kiya
+    const isAdminSignup = role === "admin";
+
+    // ✅ SECURITY CHECK: Abhi ke liye bypass (comment) kiya hua hai
+    /*
+    if (isAdminSignup) {
+      if (admin_code !== "CAMPUSX_ADMIN_2026") {
+        return res.status(403).json({
+          success: false,
+          error_code: "INVALID_ADMIN_CODE",
+          message: "Invalid Admin Access Code. Access Denied.",
+        });
+      }
+    }
+    */
 
     const isValidCollegeEmail = ALLOWED_DOMAINS.some((domain) =>
       email.toLowerCase().endsWith(domain),
@@ -33,30 +51,37 @@ exports.signup = async (req, res) => {
     }
 
     const password_hash = await bcrypt.hash(password, 10);
-    const user = await User.create({
+
+    // Agar admin hai to usko direct active kardo, warna student ko pending_approval
+    const newUser = await User.create({
       name,
       email,
       password_hash,
       year: year || 1,
       batch: batch || null,
-      status: "active",
+      branch: branch || "",
+      role: isAdminSignup ? "admin" : "student",
+      status: isAdminSignup ? "active" : "pending_approval",
     });
 
-    const token = signToken({ id: user._id, role: user.role });
+    res.locals.auditUser = newUser._id;
+    res.locals.auditEntityId = newUser._id;
 
-    res.locals.auditUser = user._id;
-    res.locals.auditEntityId = user._id;
+    const token = signToken({ id: newUser._id, role: newUser.role });
 
     res.status(201).json({
       success: true,
+      message: isAdminSignup
+        ? "Admin account created successfully. You can log in now."
+        : "Account created successfully. Please wait for admin approval.",
       data: {
-        token,
+        token: isAdminSignup ? token : null, // Admin ko turant token mil jayega
         user: {
-          id: user._id,
-          name: user.name,
-          email: user.email,
-          role: user.role,
-          status: user.status,
+          id: newUser._id,
+          name: newUser.name,
+          email: newUser.email,
+          role: newUser.role,
+          status: newUser.status,
         },
       },
     });
@@ -158,8 +183,6 @@ exports.me = async (req, res) => {
 };
 
 // POST /api/auth/change-password
-// Body: { current_password, new_password }
-// Used when must_change_password is true, or by any user to rotate password
 exports.changePassword = async (req, res) => {
   try {
     const { current_password, new_password } = req.body;
@@ -216,5 +239,114 @@ exports.changePassword = async (req, res) => {
       error_code: "SERVER_ERROR",
       message: "Something went wrong",
     });
+  }
+};
+
+const sendEmail = async (to, subject, text) => {
+  console.log(
+    `\n📧 [EMAIL SENT] To: ${to}\nSubject: ${subject}\nBody: ${text}\n`,
+  );
+};
+
+exports.forgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      return res
+        .status(200)
+        .json({ success: true, message: "If email exists, reset link sent." });
+    }
+
+    const resetToken = crypto.randomBytes(20).toString("hex");
+    const resetExpires = Date.now() + 15 * 60 * 1000; // 15 mins
+
+    user.reset_password_token = resetToken;
+    user.reset_password_expires = resetExpires;
+    await user.save();
+
+    const resetLink = `http://localhost:5173/forgot-password?token=${resetToken}`;
+
+    await sendEmail(
+      user.email,
+      "Reset Your CampusX Password",
+      `Click here to reset your password: ${resetLink}\nLink expires in 15 minutes.`,
+    );
+
+    res
+      .status(200)
+      .json({ success: true, message: "Reset link sent to email." });
+  } catch (err) {
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
+// POST /api/auth/reset-password
+exports.resetPassword = async (req, res) => {
+  try {
+    const { token, password } = req.body;
+
+    const user = await User.findOne({
+      reset_password_token: token,
+      reset_password_expires: { $gt: Date.now() },
+    });
+
+    if (!user) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid or expired token" });
+    }
+
+    user.password_hash = await bcrypt.hash(password, 10);
+    user.reset_password_token = undefined;
+    user.reset_password_expires = undefined;
+    await user.save();
+
+    res
+      .status(200)
+      .json({ success: true, message: "Password reset successful" });
+  } catch (err) {
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
+// POST /api/auth/oauth/google
+exports.googleOAuth = async (req, res) => {
+  try {
+    const { email, name, googleId } = req.body;
+
+    let user = await User.findOne({ email });
+
+    if (!user) {
+      const password_hash = await bcrypt.hash(googleId + "dummy", 10);
+      user = await User.create({
+        name,
+        email,
+        password_hash,
+        year: 1,
+        status: "active",
+        college: "IIITV",
+      });
+    }
+
+    const token = signToken({ id: user._id, role: user.role });
+
+    res.status(200).json({
+      success: true,
+      data: {
+        token,
+        user: {
+          id: user._id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+          status: user.status,
+          must_change_password: user.must_change_password,
+        },
+      },
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: "OAuth failed" });
   }
 };

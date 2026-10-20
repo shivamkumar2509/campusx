@@ -30,6 +30,12 @@ export const CLUB_TYPE_STYLES = {
     badge: "bg-purple-100 text-purple-700",
     gradient: "from-purple-500 to-fuchsia-500",
   },
+  arts: {
+    label: "Arts",
+    emoji: "🎨",
+    badge: "bg-orange-100 text-orange-700",
+    gradient: "from-orange-500 to-amber-500",
+  },
 };
 
 const DEFAULT_STYLE = {
@@ -41,7 +47,8 @@ const DEFAULT_STYLE = {
 
 export const getClubStyle = (type) => CLUB_TYPE_STYLES[type] || DEFAULT_STYLE;
 
-export const clubTitle = (club) => (club && (club.display_name || club.name)) || "";
+export const clubTitle = (club) =>
+  (club && (club.display_name || club.name)) || "";
 
 export const VERIFICATION_LABELS = {
   physical: "Physical",
@@ -52,7 +59,7 @@ export const VERIFICATION_LABELS = {
 
 export const avatarUrl = (name) =>
   `https://ui-avatars.com/api/?name=${encodeURIComponent(
-    name || "?"
+    name || "?",
   )}&background=6366f1&color=fff&size=64`;
 
 export const formatDate = (value) => {
@@ -97,6 +104,10 @@ export const notificationIcon = (type = "") => {
   if (type === "new_message") return "💬";
   if (type.includes("match") || type.includes("team")) return "👥";
   if (type.includes("vote") || type.includes("leave")) return "🗳️";
+  if (type === "club_join_request") return "🙋";
+  if (type === "club_verification_scheduled") return "📅";
+  if (type === "club_join_approved") return "🎊";
+  if (type === "club_join_rejected") return "❌";
   return "🔔";
 };
 

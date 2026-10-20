@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 
 const clubSchema = new mongoose.Schema(
   {
@@ -10,20 +10,20 @@ const clubSchema = new mongoose.Schema(
     },
     display_name: {
       type: String,
-      default: '',
+      default: "",
     },
     type: {
       type: String,
-      enum: ['music', 'coding', 'robotics', 'dance', 'drama'],
+      // enum: ["music", "coding", "robotics", "dance", "drama"],
       required: true,
     },
     description: {
       type: String,
-      default: '',
+      default: "",
     },
     secretary_id: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'User',
+      ref: "User",
       required: true,
     },
     founded_year: {
@@ -32,8 +32,8 @@ const clubSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ['active', 'inactive', 'suspended'],
-      default: 'active',
+      enum: ["active", "inactive", "suspended"],
+      default: "active",
     },
     member_count: {
       type: Number,
@@ -41,12 +41,12 @@ const clubSchema = new mongoose.Schema(
     },
     created_by: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'User',
+      ref: "User",
       required: true,
     },
     rename_request_status: {
       type: String,
-      enum: ['pending', 'approved', 'rejected', null],
+      enum: ["pending", "approved", "rejected", null],
       default: null,
     },
     rename_requested_name: {
@@ -55,7 +55,7 @@ const clubSchema = new mongoose.Schema(
     },
     rename_requested_by: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'User',
+      ref: "User",
       default: null,
     },
     rename_requested_at: {
@@ -67,13 +67,13 @@ const clubSchema = new mongoose.Schema(
       default: null,
     },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 // Indexes
-clubSchema.index({ name: 1 }, { unique: true });
+
 clubSchema.index({ type: 1 });
 clubSchema.index({ secretary_id: 1 });
 clubSchema.index({ status: 1 });
 
-module.exports = mongoose.model('Club', clubSchema);
+module.exports = mongoose.model("Club", clubSchema);

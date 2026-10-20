@@ -1,4 +1,3 @@
-// backend/src/models/teamChangeRequest.model.js
 const mongoose = require("mongoose");
 
 const teamChangeRequestSchema = new mongoose.Schema(
@@ -21,7 +20,7 @@ const teamChangeRequestSchema = new mongoose.Schema(
     reason: { type: String, default: "" },
     status: {
       type: String,
-      enum: ["pending", "approved", "rejected"],
+      enum: ["pending", "approved", "rejected", "cancelled"],
       default: "pending",
     },
     approvals: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
