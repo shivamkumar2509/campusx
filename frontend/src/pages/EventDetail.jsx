@@ -93,7 +93,7 @@ export default function EventDetail() {
               </p>
             )}
 
-            {data.user_enrollment || enrollStatus ? (
+           {(data.user_enrollment && data.user_enrollment.status !== "cancelled") || enrollStatus ? (
               <p className="text-green-700 font-semibold">
                 ✅ You are enrolled.
               </p>

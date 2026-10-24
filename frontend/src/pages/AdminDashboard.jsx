@@ -6,13 +6,30 @@ import {
 } from "../api/admin";
 import PageShell from "../components/common/PageShell";
 import { ErrorState, LoadingBlock } from "../components/common/StateViews";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { clearSession, getErrorInfo } from "../utils/clubHelpers";
 
 export default function AdminDashboard() {
   const [analytics, setAnalytics] = useState(null);
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+    const navigate = useNavigate();
+  const [retry, setRetry] = useState(0);
+  const [exporting, setExporting] = useState(false);
+  const [exportError, setExportError] = useState("");
+
+  const handleExport = async () => {
+    setExportError("");
+    setExporting(true);
+    try {
+      await exportAnalyticsCsv();
+    } catch (err) {
+      setExportError(getErrorInfo(err).message || "Export failed");
+    } finally {
+      setExporting(false);
+    }
+  };
 
   useEffect(() => {
     (async () => {
@@ -28,12 +45,19 @@ export default function AdminDashboard() {
         setAnalytics(a);
         setLogs(l.data || []);
       } catch (err) {
-        setError(err.response?.data?.message || "Failed to load admin data");
-      } finally {
+              const info = getErrorInfo(err);
+        if (info.status === 401) {
+          clearSession();
+          navigate("/login", { replace: true });
+          return;
+        }
+        setError(info.message);
+      }
+       finally {
         setLoading(false);
       }
     })();
-  }, []);
+ }, [retry, navigate]);
 
   return (
     <PageShell>
@@ -71,7 +95,8 @@ export default function AdminDashboard() {
           </Link>
 
           <button
-            onClick={exportAnalyticsCsv}
+           onClick={handleExport}
+            disabled={exporting}
             className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 text-sm font-medium"
           >
             📥 Export CSV
@@ -80,6 +105,9 @@ export default function AdminDashboard() {
       </div>
 
       {/* ===== LOADING ===== */}
+            {exportError && (
+        <p className="mb-4 text-sm text-red-600">{exportError}</p>
+      )}
       {loading && (
         <div className="bg-white border rounded-xl p-8">
           <LoadingBlock lines={4} />
@@ -87,7 +115,9 @@ export default function AdminDashboard() {
       )}
 
       {/* ===== ERROR ===== */}
-      {!loading && error && <ErrorState message={error} />}
+      {!loading && error && (
+  <ErrorState message={error} onRetry={() => setRetry((n) => n + 1)} />
+)}
 
       {/* ===== ANALYTICS ===== */}
       {!loading && !error && analytics && (

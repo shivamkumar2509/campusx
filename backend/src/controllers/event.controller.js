@@ -79,7 +79,7 @@ exports.getEvent = async (req, res) => {
   if (
     event.status === "draft" &&
     !isAdmin(req) &&
-    String(event.created_by._id) !== String(req.user.id)
+    String(event.created_by?._id) !== String(req.user.id)
   ) {
     throw new HttpError(404, "EVENT_NOT_FOUND", "Event not found");
   }
@@ -188,19 +188,28 @@ exports.deleteEvent = async (req, res) => {
   return res.status(200).json({ success: true, message: "Event deleted" });
 };
 
-// POST /api/events/:eventId/publish
+// POST /api/events/:eventId/publish  (draft -> published only)
 exports.publishEvent = async (req, res) => {
   if (!isAdmin(req)) throw new HttpError(403, "FORBIDDEN", "Admin only");
   const { eventId } = req.params;
   if (!isObjectId(eventId))
     throw new HttpError(400, "INVALID_ID", "Invalid event id");
 
-  const event = await Event.findByIdAndUpdate(
-    eventId,
+  const event = await Event.findOneAndUpdate(
+    { _id: eventId, status: "draft" },
     { $set: { status: "published" } },
     { new: true },
   );
-  if (!event) throw new HttpError(404, "EVENT_NOT_FOUND", "Event not found");
+  if (!event) {
+    const exists = await Event.exists({ _id: eventId });
+    if (!exists)
+      throw new HttpError(404, "EVENT_NOT_FOUND", "Event not found");
+    throw new HttpError(
+      422,
+      "INVALID_STATUS",
+      "Only draft events can be published",
+    );
+  }
 
   return res.status(200).json({ success: true, data: event });
 };
@@ -222,8 +231,7 @@ exports.closeEvent = async (req, res) => {
   // Fire-and-forget: don't block response. Matching can take a few seconds.
   setImmediate(async () => {
     try {
-      const matching = require("./matching.controller");
-      // Call the matching logic directly via internal function
+           const { runMatchingInternal } = require("./matching.controller");
       await runMatchingInternal(event._id);
       console.log(`[auto-match] done for event ${event._id}`);
     } catch (err) {
