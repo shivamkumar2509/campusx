@@ -231,8 +231,7 @@ exports.closeEvent = async (req, res) => {
   // Fire-and-forget: don't block response. Matching can take a few seconds.
   setImmediate(async () => {
     try {
-      const matching = require("./matching.controller");
-      // Call the matching logic directly via internal function
+           const { runMatchingInternal } = require("./matching.controller");
       await runMatchingInternal(event._id);
       console.log(`[auto-match] done for event ${event._id}`);
     } catch (err) {
