@@ -115,7 +115,9 @@ export default function AdminDashboard() {
       )}
 
       {/* ===== ERROR ===== */}
-      {!loading && error && <ErrorState message={error} />}
+      {!loading && error && (
+  <ErrorState message={error} onRetry={() => setRetry((n) => n + 1)} />
+)}
 
       {/* ===== ANALYTICS ===== */}
       {!loading && !error && analytics && (
