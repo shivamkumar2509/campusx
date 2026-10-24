@@ -61,8 +61,11 @@ exports.enrollInEvent = async (req, res) => {
   return res.status(201).json({ success: true, data: enrollment });
 };
 
-// GET /api/events/:eventId/enrollments
+// GET /api/events/:eventId/enrollments  (admin only)
 exports.listEventEnrollments = async (req, res) => {
+  if (!req.user || req.user.role !== "admin")
+    throw new HttpError(403, "FORBIDDEN", "Admin only");
+
   const { eventId } = req.params;
   if (!isObjectId(eventId))
     throw new HttpError(400, "INVALID_ID", "Invalid event id");
