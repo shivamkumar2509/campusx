@@ -17,6 +17,7 @@ import Matching from "./pages/Matching";
 import TeamDashboard from "./pages/TeamDashboard";
 import Chat from "./pages/Chat";
 import AdminDashboard from "./pages/AdminDashboard";
+import AdminEvents from "./pages/AdminEvents";
 import ExternalInvite from "./pages/ExternalInvite";
 import ClubJoinRequests from "./pages/ClubJoinRequests";
 import AdminClubs from "./pages/AdminClubs";
@@ -33,6 +34,7 @@ function App() {
         <Route path="/signup" element={<Signup />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
 
+        {/* Student routes */}
         <Route
           path="/dashboard"
           element={
@@ -90,14 +92,6 @@ function App() {
           }
         />
         <Route
-          path="/admin/users"
-          element={
-            <ProtectedRoute>
-              <AdminUsers />
-            </ProtectedRoute>
-          }
-        />
-        <Route
           path="/events"
           element={
             <ProtectedRoute>
@@ -121,7 +115,6 @@ function App() {
             </ProtectedRoute>
           }
         />
-
         <Route
           path="/teams/:teamId"
           element={
@@ -155,19 +148,35 @@ function App() {
           }
         />
 
+        {/* Admin-only routes */}
         <Route
           path="/admin/dashboard"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute requiredRole="admin">
               <AdminDashboard />
             </ProtectedRoute>
           }
         />
-
+        <Route
+          path="/admin/events"
+          element={
+            <ProtectedRoute requiredRole="admin">
+              <AdminEvents />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/users"
+          element={
+            <ProtectedRoute requiredRole="admin">
+              <AdminUsers />
+            </ProtectedRoute>
+          }
+        />
         <Route
           path="/admin/clubs"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute requiredRole="admin">
               <AdminClubs />
             </ProtectedRoute>
           }
@@ -175,7 +184,7 @@ function App() {
         <Route
           path="/admin/broadcast"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute requiredRole="admin">
               <AdminBroadcast />
             </ProtectedRoute>
           }
@@ -183,7 +192,7 @@ function App() {
         <Route
           path="/admin/external-invites"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute requiredRole="admin">
               <AdminExternalInvites />
             </ProtectedRoute>
           }

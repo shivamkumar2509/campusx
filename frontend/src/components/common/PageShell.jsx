@@ -12,6 +12,7 @@ const NAV_LINKS = [
 
 const ADMIN_LINKS = [
   { to: "/admin/dashboard", label: "Dashboard" },
+  { to: "/admin/events", label: "Events" },
   { to: "/admin/users", label: "Users" },
   { to: "/admin/clubs", label: "Clubs" },
   { to: "/admin/external-invites", label: "External" },
@@ -23,16 +24,11 @@ const linkClass = ({ isActive }) =>
     isActive ? "text-indigo-600" : "text-gray-700 hover:text-indigo-600"
   }`;
 
-/**
- * Navbar + footer wrapper.
- * unreadCount pass karoge to wahi badge mein dikhega, nahi to khud fetch karta hai.
- */
 export default function PageShell({ children, unreadCount }) {
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
   const [fetchedCount, setFetchedCount] = useState(0);
 
-  // ✅ Check if user is admin
   const userStr = localStorage.getItem("user");
   const user = userStr ? JSON.parse(userStr) : null;
   const isAdmin = user?.role === "admin";
@@ -62,7 +58,6 @@ export default function PageShell({ children, unreadCount }) {
     <div className="min-h-screen bg-gray-50 flex flex-col">
       <nav className="bg-white shadow-sm sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
-          {/* Logo */}
           <Link
             to={isAdmin ? "/admin/dashboard" : "/dashboard"}
             className="text-2xl font-bold text-indigo-600 flex items-center gap-2"
@@ -75,7 +70,6 @@ export default function PageShell({ children, unreadCount }) {
             )}
           </Link>
 
-          {/* Desktop Links */}
           <div className="hidden md:flex items-center gap-6">
             {isAdmin
               ? ADMIN_LINKS.map((l) => (
@@ -110,7 +104,6 @@ export default function PageShell({ children, unreadCount }) {
             </button>
           </div>
 
-          {/* Mobile Links */}
           <div className="flex items-center gap-4 md:hidden">
             <Link
               to="/notifications"
@@ -136,7 +129,6 @@ export default function PageShell({ children, unreadCount }) {
           </div>
         </div>
 
-        {/* Mobile Menu */}
         {menuOpen && (
           <div className="md:hidden border-t px-6 py-3 flex flex-col gap-3 bg-white">
             {isAdmin

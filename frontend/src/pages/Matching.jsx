@@ -12,11 +12,11 @@ export default function Matching() {
   const [suggestions, setSuggestions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [eventId, setEventId] = useState("");
+  const [decliningId, setDecliningId] = useState(null);
+  const [acceptingId, setAcceptingId] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Load first pending suggestion across all events the user is enrolled in
     let cancelled = false;
     (async () => {
       try {
@@ -45,10 +45,7 @@ export default function Matching() {
           }
         }
 
-        if (!cancelled) {
-          setSuggestions(results);
-          setEventId(eventIds[0]);
-        }
+        if (!cancelled) setSuggestions(results);
       } catch (err) {
         if (!cancelled)
           setError(err.response?.data?.message || "Failed to load suggestions");
@@ -62,6 +59,7 @@ export default function Matching() {
   }, []);
 
   const handleAccept = async (suggestionId) => {
+    setAcceptingId(suggestionId);
     try {
       const res = await api.post(`/suggestions/${suggestionId}/accept`);
       const teamId = res.data?.data?.team?._id;
@@ -69,11 +67,21 @@ export default function Matching() {
       else navigate("/dashboard");
     } catch (err) {
       alert(err.response?.data?.message || "Failed to accept");
+    } finally {
+      setAcceptingId(null);
     }
   };
 
-  const handleDecline = (suggestionId) => {
-    setSuggestions((prev) => prev.filter((s) => s._id !== suggestionId));
+  const handleDecline = async (suggestionId) => {
+    setDecliningId(suggestionId);
+    try {
+      await api.post(`/suggestions/${suggestionId}/reject`);
+      setSuggestions((prev) => prev.filter((s) => s._id !== suggestionId));
+    } catch (err) {
+      alert(err.response?.data?.message || "Failed to decline");
+    } finally {
+      setDecliningId(null);
+    }
   };
 
   return (
@@ -133,15 +141,17 @@ export default function Matching() {
               <div className="flex gap-2">
                 <button
                   onClick={() => handleAccept(s._id)}
-                  className="flex-1 bg-indigo-600 text-white py-2 rounded-lg hover:bg-indigo-700 text-sm font-medium"
+                  disabled={acceptingId === s._id || decliningId === s._id}
+                  className="flex-1 bg-indigo-600 text-white py-2 rounded-lg hover:bg-indigo-700 text-sm font-medium disabled:opacity-60"
                 >
-                  Accept
+                  {acceptingId === s._id ? "Accepting..." : "Accept"}
                 </button>
                 <button
                   onClick={() => handleDecline(s._id)}
-                  className="flex-1 border py-2 rounded-lg text-sm font-medium hover:bg-gray-50"
+                  disabled={acceptingId === s._id || decliningId === s._id}
+                  className="flex-1 border py-2 rounded-lg text-sm font-medium hover:bg-gray-50 disabled:opacity-60"
                 >
-                  Decline
+                  {decliningId === s._id ? "Declining..." : "Decline"}
                 </button>
               </div>
             </div>

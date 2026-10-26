@@ -3,6 +3,7 @@ const Team = require("../models/team.model");
 const TeamMember = require("../models/teamMember.model");
 const TeamInvitation = require("../models/teamInvitation.model");
 const Enrollment = require("../models/enrollment.model");
+const Event = require("../models/event.model");
 const User = require("../models/user.model");
 const Skill = require("../models/skill.model");
 const HttpError = require("../utils/httpError");
@@ -61,7 +62,35 @@ const calculateMatchScore = async (candidateId, teamId) => {
   return { score: Math.round(score * 100) / 100, reasoning };
 };
 
-// GET /api/teams/:teamId/replacements
+// ===== HELPER: team size availability =====
+const assertTeamHasSlot = async (teamId) => {
+  const team = await Team.findById(teamId).select("event_id").lean();
+  if (!team) throw new HttpError(404, "TEAM_NOT_FOUND", "Team not found");
+
+  const event = await Event.findById(team.event_id)
+    .select("team_size_max")
+    .lean();
+  const maxSize = event && event.team_size_max ? event.team_size_max : 6;
+
+  const acceptedCount = await TeamMember.countDocuments({
+    team_id: teamId,
+    status: "accepted",
+  });
+  const invitedCount = await TeamMember.countDocuments({
+    team_id: teamId,
+    status: "invited",
+  });
+
+  if (acceptedCount + invitedCount >= maxSize) {
+    throw new HttpError(
+      422,
+      "TEAM_FULL",
+      `Team is full (max ${maxSize} members)`,
+    );
+  }
+};
+
+// ===== GET /api/teams/:teamId/replacements =====
 exports.getReplacements = async (req, res) => {
   const { teamId } = req.params;
   if (!isObjectId(teamId))
@@ -90,7 +119,7 @@ exports.getReplacements = async (req, res) => {
   return res.status(200).json({ success: true, data: suggestions });
 };
 
-// POST /api/teams/:teamId/find-replacement
+// ===== POST /api/teams/:teamId/find-replacement =====
 exports.findReplacement = async (req, res) => {
   const { teamId } = req.params;
   const { replacing_user_id, role_needed } = req.body || {};
@@ -172,7 +201,7 @@ exports.findReplacement = async (req, res) => {
   return res.status(200).json({ success: true, data: populated });
 };
 
-// POST /api/teams/:teamId/replacements/:suggestionId/invite
+// ===== POST /api/teams/:teamId/replacements/:suggestionId/invite =====
 exports.inviteReplacement = async (req, res) => {
   const { teamId, suggestionId } = req.params;
   if (!isObjectId(teamId) || !isObjectId(suggestionId)) {
@@ -193,6 +222,9 @@ exports.inviteReplacement = async (req, res) => {
 
   const team = await Team.findById(teamId);
   if (!team) throw new HttpError(404, "TEAM_NOT_FOUND", "Team not found");
+
+  // Enforce team size cap
+  await assertTeamHasSlot(teamId);
 
   const existingMember = await TeamMember.exists({
     team_id: teamId,
@@ -239,7 +271,7 @@ exports.inviteReplacement = async (req, res) => {
   return res.status(201).json({ success: true, data: invitation });
 };
 
-// POST /api/teams/:teamId/invitations/:invitationId/respond
+// ===== POST /api/teams/:teamId/invitations/:invitationId/respond =====
 exports.respondToInvitation = async (req, res) => {
   const { teamId, invitationId } = req.params;
   const { response } = req.body || {};
@@ -268,17 +300,44 @@ exports.respondToInvitation = async (req, res) => {
   }
 
   if (response === "accept") {
-    await TeamMember.create({
-      team_id: teamId,
-      user_id: req.user.id,
-      role: "member",
-      status: "accepted",
-      joined_at: new Date(),
-    });
+    // Enforce team size cap on accept
+    const team = await Team.findById(teamId).select("event_id").lean();
+    if (team) {
+      const event = await Event.findById(team.event_id)
+        .select("team_size_max")
+        .lean();
+      const maxSize = event && event.team_size_max ? event.team_size_max : 6;
+      const acceptedCount = await TeamMember.countDocuments({
+        team_id: teamId,
+        status: "accepted",
+      });
+      if (acceptedCount >= maxSize) {
+        throw new HttpError(
+          422,
+          "TEAM_FULL",
+          `Team is full (max ${maxSize} members)`,
+        );
+      }
+    }
 
-    const team = await Team.findById(teamId);
+    // Upsert TeamMember (invited → accepted)
+    await TeamMember.findOneAndUpdate(
+      { team_id: teamId, user_id: req.user.id },
+      {
+        $set: {
+          team_id: teamId,
+          user_id: req.user.id,
+          role: "member",
+          status: "accepted",
+          joined_at: new Date(),
+        },
+      },
+      { upsert: true },
+    );
+
+    const teamFull = await Team.findById(teamId);
     await Enrollment.findOneAndUpdate(
-      { user_id: req.user.id, event_id: team.event_id },
+      { user_id: req.user.id, event_id: teamFull.event_id },
       { $set: { status: "matched", source: "leader_invite" } },
       { upsert: true },
     );
@@ -286,6 +345,11 @@ exports.respondToInvitation = async (req, res) => {
     invitation.status = "accepted";
   } else {
     invitation.status = "declined";
+    // Also mark TeamMember invited → declined
+    await TeamMember.updateOne(
+      { team_id: teamId, user_id: req.user.id, status: "invited" },
+      { $set: { status: "declined" } },
+    );
   }
 
   invitation.responded_at = new Date();

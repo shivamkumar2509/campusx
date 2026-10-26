@@ -57,7 +57,13 @@ export default function EventDetail() {
                 {data.type}
               </span>
               <span
-                className={`text-xs font-semibold px-2 py-1 rounded ${data.status === "published" ? "bg-green-100 text-green-700" : data.status === "closed" ? "bg-gray-200 text-gray-700" : "bg-yellow-100 text-yellow-800"}`}
+                className={`text-xs font-semibold px-2 py-1 rounded ${
+                  data.status === "published"
+                    ? "bg-green-100 text-green-700"
+                    : data.status === "closed"
+                      ? "bg-gray-200 text-gray-700"
+                      : "bg-yellow-100 text-yellow-800"
+                }`}
               >
                 {data.status}
               </span>
@@ -66,7 +72,7 @@ export default function EventDetail() {
             <p className="mt-3 text-gray-700">
               {data.description || "No description."}
             </p>
-            <div className="mt-6 grid sm:grid-cols-3 gap-4">
+            <div className="mt-6 grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
               <div className="bg-gray-50 rounded-lg p-4">
                 <p className="text-xs uppercase text-gray-500">Deadline</p>
                 <p className="mt-1 font-semibold">
@@ -76,7 +82,13 @@ export default function EventDetail() {
               <div className="bg-gray-50 rounded-lg p-4">
                 <p className="text-xs uppercase text-gray-500">Team size</p>
                 <p className="mt-1 font-semibold">
-                  {data.team_size_min}–{data.team_size_max}
+                  {data.team_size_min}–{data.team_size_max} members
+                </p>
+              </div>
+              <div className="bg-gray-50 rounded-lg p-4">
+                <p className="text-xs uppercase text-gray-500">Max teams</p>
+                <p className="mt-1 font-semibold">
+                  {data.max_teams != null ? data.max_teams : "Unlimited"}
                 </p>
               </div>
               <div className="bg-gray-50 rounded-lg p-4">

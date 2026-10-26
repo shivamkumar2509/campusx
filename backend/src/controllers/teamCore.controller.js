@@ -7,7 +7,6 @@ const HttpError = require("../utils/httpError");
 const { isObjectId } = require("../utils/queryHelpers");
 const { createNotification } = require("../services/notification.service");
 
-// Guard: current user is an active member
 const assertActiveMember = async (teamId, userId) => {
   const m = await TeamMember.findOne({
     team_id: teamId,
@@ -19,7 +18,6 @@ const assertActiveMember = async (teamId, userId) => {
   return m;
 };
 
-// Guard: current user is the leader
 const assertLeader = async (teamId, userId) => {
   const team = await Team.findById(teamId).select("leader_id").lean();
   if (!team) throw new HttpError(404, "TEAM_NOT_FOUND", "Team not found");
@@ -29,7 +27,7 @@ const assertLeader = async (teamId, userId) => {
   return team;
 };
 
-// GET /api/teams/:teamId  — basic info (chat page needs this)
+// ===== GET /api/teams/:teamId =====
 exports.getTeam = async (req, res) => {
   const { teamId } = req.params;
   if (!isObjectId(teamId))
@@ -39,7 +37,10 @@ exports.getTeam = async (req, res) => {
 
   const team = await Team.findById(teamId)
     .populate("leader_id", "name avatar_url")
-    .populate("event_id", "title type deadline status")
+    .populate(
+      "event_id",
+      "title type deadline status team_size_min team_size_max max_teams",
+    )
     .lean();
   if (!team) throw new HttpError(404, "TEAM_NOT_FOUND", "Team not found");
 
@@ -58,7 +59,7 @@ exports.getTeam = async (req, res) => {
   });
 };
 
-// POST /api/teams/:teamId/confirm — leader only; creates conversation + members
+// ===== POST /api/teams/:teamId/confirm =====
 exports.confirmTeam = async (req, res) => {
   const { teamId } = req.params;
   if (!isObjectId(teamId))
@@ -80,36 +81,40 @@ exports.confirmTeam = async (req, res) => {
     throw new HttpError(422, "NO_MEMBERS", "Team has no accepted members");
   }
 
-  // Optional: enforce min team size if event exists
+  // Enforce min/max team size
   if (team.event_id) {
     const event = await Event.findById(team.event_id)
-      .select("team_size_min")
+      .select("team_size_min team_size_max")
       .lean();
-    if (
-      event &&
-      event.team_size_min &&
-      activeMembers.length < event.team_size_min
-    ) {
-      throw new HttpError(
-        422,
-        "INSUFFICIENT_MEMBERS",
-        `Team needs at least ${event.team_size_min} accepted members`,
-      );
+    if (event) {
+      const minSize = event.team_size_min || 2;
+      const maxSize = event.team_size_max || 6;
+      if (activeMembers.length < minSize) {
+        throw new HttpError(
+          422,
+          "INSUFFICIENT_MEMBERS",
+          `Team needs at least ${minSize} accepted members`,
+        );
+      }
+      if (activeMembers.length > maxSize) {
+        throw new HttpError(
+          422,
+          "TOO_MANY_MEMBERS",
+          `Team can have at most ${maxSize} accepted members`,
+        );
+      }
     }
   }
 
-  // Upgrade any invited → accepted (leader's confirmation is the approval)
   await TeamMember.updateMany(
     { team_id: teamId, status: "invited" },
     { $set: { status: "accepted", joined_at: new Date() } },
   );
 
-  // Mark team confirmed
   team.status = "confirmed";
   team.confirmed_at = new Date();
   await team.save();
 
-  // Create conversation (or reuse if exists)
   let conversation = await Conversation.findOne({ team_id: teamId });
   if (!conversation) {
     conversation = await Conversation.create({
@@ -119,7 +124,6 @@ exports.confirmTeam = async (req, res) => {
     });
   }
 
-  // Add every accepted member as active conversation member (idempotent)
   const accepted = await TeamMember.find({
     team_id: teamId,
     status: "accepted",
@@ -144,7 +148,6 @@ exports.confirmTeam = async (req, res) => {
     ),
   );
 
-  // Notify members (best-effort)
   try {
     for (const m of accepted) {
       if (String(m.user_id) !== String(req.user.id)) {
@@ -164,26 +167,21 @@ exports.confirmTeam = async (req, res) => {
 
   return res.status(200).json({
     success: true,
-    data: {
-      team,
-      conversation_id: conversation._id,
-    },
+    data: { team, conversation_id: conversation._id },
   });
 };
 
-// GET /api/teams/:teamId/conversation — GATED: team must be confirmed
+// ===== GET /api/teams/:teamId/conversation =====
 exports.getTeamConversation = async (req, res) => {
   const { teamId } = req.params;
   if (!isObjectId(teamId))
     throw new HttpError(400, "INVALID_ID", "Invalid team id");
 
-  // Member check first — non-members get 403 regardless of status
   await assertActiveMember(teamId, req.user.id);
 
   const team = await Team.findById(teamId).select("status name").lean();
   if (!team) throw new HttpError(404, "TEAM_NOT_FOUND", "Team not found");
 
-  // GATE: draft teams have no chat
   if (team.status === "draft") {
     throw new HttpError(
       403,
@@ -192,7 +190,6 @@ exports.getTeamConversation = async (req, res) => {
     );
   }
 
-  // Find or lazily create (in case confirm ran before this code existed)
   let conversation = await Conversation.findOne({ team_id: teamId });
   if (!conversation) {
     conversation = await Conversation.create({
@@ -225,14 +222,12 @@ exports.getTeamConversation = async (req, res) => {
       ),
     );
   } else {
-    // Ensure caller is an active member of this conversation
     const cm = await ConversationMember.findOne({
       conv_id: conversation._id,
       user_id: req.user.id,
       status: "active",
     }).lean();
     if (!cm) {
-      // Self-heal: add them if they're an accepted team member
       await ConversationMember.updateOne(
         { conv_id: conversation._id, user_id: req.user.id },
         {
@@ -251,7 +246,7 @@ exports.getTeamConversation = async (req, res) => {
   return res.status(200).json({ success: true, data: conversation });
 };
 
-// GET /api/teams/:teamId/members
+// ===== GET /api/teams/:teamId/members =====
 exports.getTeamMembers = async (req, res) => {
   const { teamId } = req.params;
   if (!isObjectId(teamId))

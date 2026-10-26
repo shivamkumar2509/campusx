@@ -4,6 +4,7 @@ const ExternalInvitation = require("../models/externalInvitation.model");
 const Team = require("../models/team.model");
 const TeamMember = require("../models/teamMember.model");
 const Enrollment = require("../models/enrollment.model");
+const Event = require("../models/event.model");
 const User = require("../models/user.model");
 const HttpError = require("../utils/httpError");
 const { isObjectId } = require("../utils/queryHelpers");
@@ -15,7 +16,44 @@ const isTeamLeader = async (teamId, userId) => {
   return team && String(team.leader_id) === String(userId);
 };
 
-// POST /api/teams/:teamId/external-invitations
+// ===== HELPER: team size availability (includes external pending) =====
+const assertTeamHasSlot = async (teamId) => {
+  const team = await Team.findById(teamId).select("event_id").lean();
+  if (!team) throw new HttpError(404, "TEAM_NOT_FOUND", "Team not found");
+
+  const event = await Event.findById(team.event_id)
+    .select("team_size_max")
+    .lean();
+  const maxSize = event && event.team_size_max ? event.team_size_max : 6;
+
+  // Count accepted + invited team members
+  const acceptedCount = await TeamMember.countDocuments({
+    team_id: teamId,
+    status: "accepted",
+  });
+  const invitedCount = await TeamMember.countDocuments({
+    team_id: teamId,
+    status: "invited",
+  });
+
+  // ✅ CRITICAL FIX: Count pending external invitations too
+  const pendingExternalCount = await ExternalInvitation.countDocuments({
+    team_id: teamId,
+    status: { $in: ["pending", "registered"] },
+  });
+
+  const totalCommitted = acceptedCount + invitedCount + pendingExternalCount;
+
+  if (totalCommitted >= maxSize) {
+    throw new HttpError(
+      422,
+      "TEAM_FULL",
+      `Team is full (max ${maxSize} members, ${totalCommitted} committed including pending invites)`,
+    );
+  }
+};
+
+// ===== POST /api/teams/:teamId/external-invitations =====
 exports.createExternalInvitation = async (req, res) => {
   const { teamId } = req.params;
   const {
@@ -41,6 +79,9 @@ exports.createExternalInvitation = async (req, res) => {
 
   const team = await Team.findById(teamId);
   if (!team) throw new HttpError(404, "TEAM_NOT_FOUND", "Team not found");
+
+  // ✅ Enforce team size cap (now includes pending external invites)
+  await assertTeamHasSlot(teamId);
 
   const existing = await ExternalInvitation.findOne({
     team_id: teamId,
@@ -93,7 +134,7 @@ exports.createExternalInvitation = async (req, res) => {
   });
 };
 
-// POST /api/external-invitations/:token/signup
+// ===== POST /api/external-invitations/:token/signup =====
 exports.signupViaExternalInvite = async (req, res) => {
   const { token } = req.params;
   const { name, password, year } = req.body || {};
@@ -140,7 +181,6 @@ exports.signupViaExternalInvite = async (req, res) => {
 
   const authToken = signToken({ id: user._id, role: user.role });
 
-  // Notify leader
   const team = await Team.findById(invitation.team_id)
     .select("leader_id name")
     .lean();
@@ -170,7 +210,7 @@ exports.signupViaExternalInvite = async (req, res) => {
   });
 };
 
-// POST /api/external-invitations/:invitationId/approve  (internal — used by team vote)
+// ===== POST /api/external-invitations/:invitationId/approve =====
 exports.approveExternalInvite = async (req, res) => {
   const { invitationId } = req.params;
   if (!isObjectId(invitationId))
@@ -191,7 +231,9 @@ exports.approveExternalInvite = async (req, res) => {
   if (!isLeader)
     throw new HttpError(403, "FORBIDDEN", "Only leader can finalize");
 
-  // Add member + enrollment
+  // ✅ Enforce team size cap on approve
+  await assertTeamHasSlot(invitation.team_id);
+
   await TeamMember.create({
     team_id: invitation.team_id,
     user_id: invitation.registered_user_id,
@@ -224,7 +266,7 @@ exports.approveExternalInvite = async (req, res) => {
   return res.status(200).json({ success: true, data: invitation });
 };
 
-// GET /api/external-invitations/:token  (public preview)
+// ===== GET /api/external-invitations/:token =====
 exports.previewExternalInvite = async (req, res) => {
   const { token } = req.params;
   const invitation = await ExternalInvitation.findOne({ token })

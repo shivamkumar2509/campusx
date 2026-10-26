@@ -2,6 +2,7 @@ const TeamChangeRequest = require("../models/teamChangeRequest.model");
 const Team = require("../models/team.model");
 const TeamMember = require("../models/teamMember.model");
 const User = require("../models/user.model");
+const Event = require("../models/event.model");
 const ConversationMember = require("../models/conversationMember.model");
 const Conversation = require("../models/conversation.model");
 const HttpError = require("../utils/httpError");
@@ -26,7 +27,7 @@ const computeThreshold = async (teamId, requesterId) => {
   return Math.floor(eligibleVoters / 2) + 1;
 };
 
-// POST /api/teams/:teamId/leave-requests
+// ===== CREATE LEAVE REQUEST =====
 exports.createLeaveRequest = async (req, res) => {
   const { teamId } = req.params;
   const { reason = "" } = req.body || {};
@@ -97,7 +98,7 @@ exports.createLeaveRequest = async (req, res) => {
   return res.status(201).json({ success: true, data: request });
 };
 
-// GET /api/teams/:teamId/leave-requests
+// ===== GET LEAVE REQUESTS =====
 exports.getLeaveRequests = async (req, res) => {
   const { teamId } = req.params;
   if (!isObjectId(teamId)) {
@@ -120,10 +121,10 @@ exports.getLeaveRequests = async (req, res) => {
   return res.status(200).json({ success: true, data: requests });
 };
 
-// POST /api/teams/:teamId/leave-requests/:requestId/votes
+// ===== VOTE ON LEAVE REQUEST =====
 exports.voteOnLeaveRequest = async (req, res) => {
   const { teamId, requestId } = req.params;
-  const { vote } = req.body || {}; // 'approve' | 'reject'
+  const { vote } = req.body || {};
 
   if (!isObjectId(teamId) || !isObjectId(requestId)) {
     throw new HttpError(400, "INVALID_ID", "Invalid id");
@@ -186,7 +187,6 @@ exports.voteOnLeaveRequest = async (req, res) => {
 
   await request.save();
 
-  // Notify requester
   await createNotification({
     user: request.user_id,
     type: "vote_cast",
@@ -199,7 +199,7 @@ exports.voteOnLeaveRequest = async (req, res) => {
   return res.status(200).json({ success: true, data: request });
 };
 
-// GET /api/teams/:teamId/leave-requests/:requestId/result
+// ===== GET LEAVE REQUEST RESULT (with team size check) =====
 exports.getLeaveRequestResult = async (req, res) => {
   const { teamId, requestId } = req.params;
   if (!isObjectId(teamId) || !isObjectId(requestId)) {
@@ -226,7 +226,6 @@ exports.getLeaveRequestResult = async (req, res) => {
   let decided = false;
   let outcome = null;
 
-  // Auto-resolve if threshold reached or window expired
   if (request.status === "pending") {
     const expired = new Date() > request.expires_at;
     if (approvals >= threshold) {
@@ -240,7 +239,6 @@ exports.getLeaveRequestResult = async (req, res) => {
       decided = true;
       outcome = "rejected";
     } else if (rejections >= threshold) {
-      // early rejection
       request.status = "rejected";
       request.resolved_at = new Date();
       decided = true;
@@ -279,9 +277,27 @@ exports.getLeaveRequestResult = async (req, res) => {
       priority: "high",
     });
 
-    // Notify leader — replacement needed
-    const team = await Team.findById(teamId).select("leader_id name").lean();
+    const team = await Team.findById(teamId)
+      .select("leader_id name event_id")
+      .lean();
+
+    // ===== CRITICAL FIX: Check team size after member left =====
     if (team) {
+      const remainingMembers = await TeamMember.countDocuments({
+        team_id: teamId,
+        status: "accepted",
+      });
+
+      // Fetch event to get team_size_min
+      let teamSizeMin = null;
+      if (team.event_id) {
+        const event = await Event.findById(team.event_id)
+          .select("team_size_min title")
+          .lean();
+        if (event) teamSizeMin = event.team_size_min || 2;
+      }
+
+      // Notify leader — replacement needed
       await createNotification({
         user: team.leader_id,
         type: "member_left",
@@ -290,6 +306,39 @@ exports.getLeaveRequestResult = async (req, res) => {
         link: `/teams/${teamId}`,
         priority: "high",
       });
+
+      // If team below min size → force draft + urgent notification
+      if (teamSizeMin && remainingMembers < teamSizeMin) {
+        await Team.updateOne({ _id: teamId }, { $set: { status: "draft" } });
+
+        await createNotification({
+          user: team.leader_id,
+          type: "member_left",
+          title: "⚠️ Team below minimum size",
+          message: `Team "${team.name}" now has ${remainingMembers} members, but requires at least ${teamSizeMin}. Find a replacement to re-confirm the team.`,
+          link: `/teams/${teamId}`,
+          priority: "high",
+        });
+
+        // Notify all remaining members
+        const remaining = await TeamMember.find({
+          team_id: teamId,
+          status: "accepted",
+        })
+          .select("user_id")
+          .lean();
+
+        for (const m of remaining) {
+          await createNotification({
+            user: m.user_id,
+            type: "team_confirmed",
+            title: "⚠️ Team below minimum size",
+            message: `Team "${team.name}" is now in draft because it has fewer than ${teamSizeMin} members. Leader needs to find a replacement.`,
+            link: `/teams/${teamId}`,
+            priority: "high",
+          });
+        }
+      }
     }
   }
 
@@ -309,7 +358,7 @@ exports.getLeaveRequestResult = async (req, res) => {
   });
 };
 
-// DELETE /api/leave-requests/:requestId  (cancel by requester)
+// ===== CANCEL LEAVE REQUEST =====
 exports.cancelLeaveRequest = async (req, res) => {
   const { requestId } = req.params;
   if (!isObjectId(requestId)) {
