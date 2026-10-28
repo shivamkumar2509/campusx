@@ -29,3 +29,8 @@ export async function fetchTeamTasks(teamId) {
   const { data } = await api.get(`/teams/${teamId}/tasks`);
   return data;
 }
+
+export async function fetchMyTeams() {
+  const { data } = await api.get("/teams/my");
+  return Array.isArray(data.data) ? data.data : [];
+}

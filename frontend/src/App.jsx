@@ -24,6 +24,7 @@ import AdminClubs from "./pages/AdminClubs";
 import AdminBroadcast from "./pages/AdminBroadcast";
 import AdminUsers from "./pages/AdminUsers";
 import AdminExternalInvites from "./pages/AdminExternalInvites";
+import TeamVoting from "./pages/TeamVoting";
 
 function App() {
   return (
@@ -194,6 +195,14 @@ function App() {
           element={
             <ProtectedRoute requiredRole="admin">
               <AdminExternalInvites />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/teams/:teamId/voting"
+          element={
+            <ProtectedRoute>
+              <TeamVoting />
             </ProtectedRoute>
           }
         />

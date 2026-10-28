@@ -385,3 +385,91 @@ exports.getTeamTasks = async (req, res) => {
 
   return res.status(200).json({ success: true, data: [] });
 };
+
+/**
+ * GET /api/teams/my
+ * Return the logged-in student's confirmed teams
+ * and their accepted members.
+ */
+exports.getMyTeams = async (req, res) => {
+  const userId = req.user.id;
+
+  // Find teams where the logged-in student is an accepted member.
+  const memberships = await TeamMember.find({
+    user_id: userId,
+    status: "accepted",
+  })
+    .select("team_id")
+    .lean();
+
+  const teamIds = memberships.map((membership) => membership.team_id);
+
+  if (teamIds.length === 0) {
+    return res.status(200).json({
+      success: true,
+      data: [],
+    });
+  }
+
+  // Only return confirmed teams.
+  const teams = await Team.find({
+    _id: { $in: teamIds },
+    status: "confirmed",
+  })
+    .populate("event_id", "title type deadline")
+    .lean();
+
+  if (teams.length === 0) {
+    return res.status(200).json({
+      success: true,
+      data: [],
+    });
+  }
+
+  const confirmedTeamIds = teams.map((team) => team._id);
+
+  // Fetch accepted members only. Invited, declined and left
+  // members are intentionally excluded.
+  const membershipsByTeam = await TeamMember.find({
+    team_id: { $in: confirmedTeamIds },
+    status: "accepted",
+  })
+    .populate("user_id", "name email avatar_url")
+    .sort({ joined_at: 1 })
+    .lean();
+
+  const membersByTeam = new Map();
+
+  for (const membership of membershipsByTeam) {
+    if (!membership.user_id) continue;
+
+    const teamKey = String(membership.team_id);
+
+    if (!membersByTeam.has(teamKey)) {
+      membersByTeam.set(teamKey, []);
+    }
+
+    membersByTeam.get(teamKey).push({
+      _id: membership._id,
+      user_id: membership.user_id._id,
+      name: membership.user_id.name,
+      email: membership.user_id.email,
+      avatar_url: membership.user_id.avatar_url,
+      role: membership.role,
+      status: membership.status,
+      joined_at: membership.joined_at,
+    });
+  }
+
+  const data = teams.map((team) => ({
+    ...team,
+    is_leader: String(team.leader_id) === String(userId),
+    members: membersByTeam.get(String(team._id)) || [],
+    member_count: (membersByTeam.get(String(team._id)) || []).length,
+  }));
+
+  return res.status(200).json({
+    success: true,
+    data,
+  });
+};
