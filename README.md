@@ -49,8 +49,7 @@ The platform brings together event participation, AI-powered team matching, club
 ### Tools & Deployment
 
 - Git and GitHub
-- Vercel for frontend hosting, if configured
-- Render for backend hosting, if configured
+- Render
 
 ## 🏗️ Project Architecture
 
