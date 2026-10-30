@@ -13,11 +13,9 @@ exports.signup = async (req, res) => {
     const { name, email, password, year, batch, branch, role, admin_code } =
       req.body;
 
-    // ✅ isAdminSignup variable wapas add kiya
     const isAdminSignup = role === "admin";
 
-    // ✅ SECURITY CHECK: Abhi ke liye bypass (comment) kiya hua hai
-    /*
+    // ✅ SECURITY CHECK: Ab admin code ke bina koi signup nahi kar sakta
     if (isAdminSignup) {
       if (admin_code !== "CAMPUSX_ADMIN_2026") {
         return res.status(403).json({
@@ -27,7 +25,6 @@ exports.signup = async (req, res) => {
         });
       }
     }
-    */
 
     const isValidCollegeEmail = ALLOWED_DOMAINS.some((domain) =>
       email.toLowerCase().endsWith(domain),
@@ -52,7 +49,8 @@ exports.signup = async (req, res) => {
 
     const password_hash = await bcrypt.hash(password, 10);
 
-    // Agar admin hai to usko direct active kardo, warna student ko pending_approval
+    // ✅ LOGIC CHANGE: Ab admin ho ya student, dono ko pending_approval mein daalo
+    // Admin ko bhi existing admin hi approve karega.
     const newUser = await User.create({
       name,
       email,
@@ -61,21 +59,22 @@ exports.signup = async (req, res) => {
       batch: batch || null,
       branch: branch || "",
       role: isAdminSignup ? "admin" : "student",
-      status: isAdminSignup ? "active" : "pending_approval",
+      status: "pending_approval", // Ab dono pending rahenge
     });
 
     res.locals.auditUser = newUser._id;
     res.locals.auditEntityId = newUser._id;
 
-    const token = signToken({ id: newUser._id, role: newUser.role });
+    // ✅ Token tabhi denge jab active ho, par yahan ab token null hi jayega kyunki status pending hai
+    const token = null;
 
     res.status(201).json({
       success: true,
       message: isAdminSignup
-        ? "Admin account created successfully. You can log in now."
+        ? "Admin account request submitted. Please wait for existing admin approval."
         : "Account created successfully. Please wait for admin approval.",
       data: {
-        token: isAdminSignup ? token : null, // Admin ko turant token mil jayega
+        token,
         user: {
           id: newUser._id,
           name: newUser.name,

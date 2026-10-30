@@ -12,7 +12,7 @@ export default function Signup() {
     branch: "",
     password: "",
     confirm: "",
-    // admin_code: "", // ✅ Naya field
+    admin_code: "", // ✅ Wapas add kiya
   });
 
   const [error, setError] = useState("");
@@ -49,22 +49,15 @@ export default function Signup() {
         role: signupType, // "student" or "admin"
       };
 
-      // if (signupType === "admin") {
-      //   payload.admin_code = form.admin_code;
-      // }
+      if (signupType === "admin") {
+        payload.admin_code = form.admin_code; // ✅ Code bhejna zaroori hai
+      }
 
       const { data } = await api.post("/auth/signup", payload);
 
-      if (data.data.token) {
-        // Admin direct login
-        localStorage.setItem("token", data.data.token);
-        localStorage.setItem("user", JSON.stringify(data.data.user));
-        navigate("/admin/dashboard");
-      } else {
-        // Student awaiting approval
-        alert(data.message);
-        navigate("/login");
-      }
+      // Ab token hamesha null aayega, sabko approval ka wait karna hoga
+      alert(data.message);
+      navigate("/login");
     } catch (err) {
       setError(err.response?.data?.message || "Signup failed");
     } finally {
@@ -166,8 +159,8 @@ export default function Signup() {
             </div>
           )}
 
-          {/* ✅ Admin Secret Code Field */}
-          {/* {signupType === "admin" && (
+          {/* ✅ Admin Secret Code Field (Wapas Enable) */}
+          {signupType === "admin" && (
             <div className="bg-yellow-50 border border-yellow-200 p-3 rounded-lg">
               <label className="block text-xs font-semibold text-yellow-800 mb-1">
                 Admin Access Code (Required)
@@ -182,8 +175,12 @@ export default function Signup() {
                 required
                 className="w-full border border-yellow-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-500"
               />
+              <p className="text-[10px] text-yellow-700 mt-1">
+                Note: Your account will still need approval from an existing
+                admin.
+              </p>
             </div>
-          )} */}
+          )}
 
           <input
             type="password"
@@ -201,6 +198,7 @@ export default function Signup() {
             required
             className="w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
           />
+
           <button
             type="submit"
             disabled={loading}

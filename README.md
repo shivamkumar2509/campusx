@@ -49,7 +49,7 @@ The platform brings together event participation, AI-powered team matching, club
 ### Tools & Deployment
 
 - Git and GitHub
-- Render
+- Render 
 
 ## 🏗️ Project Architecture
 
