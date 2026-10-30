@@ -105,7 +105,7 @@ export default function Login() {
             {loading ? "Logging in..." : "Login"}
           </button>
         </form>
-        <div className="mt-4">
+        {/* <div className="mt-4">
           <button
             type="button"
             onClick={handleGoogle}
@@ -118,7 +118,7 @@ export default function Login() {
             />
             Continue with Google
           </button>
-        </div>
+        </div> */}
         <p className="text-center text-sm text-gray-600 mt-4">
           Don't have an account?{" "}
           <Link to="/signup" className="text-indigo-600 hover:underline">

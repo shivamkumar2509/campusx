@@ -311,41 +311,41 @@ exports.resetPassword = async (req, res) => {
 };
 
 // POST /api/auth/oauth/google
-exports.googleOAuth = async (req, res) => {
-  try {
-    const { email, name, googleId } = req.body;
+// exports.googleOAuth = async (req, res) => {
+//   try {
+//     const { email, name, googleId } = req.body;
 
-    let user = await User.findOne({ email });
+//     let user = await User.findOne({ email });
 
-    if (!user) {
-      const password_hash = await bcrypt.hash(googleId + "dummy", 10);
-      user = await User.create({
-        name,
-        email,
-        password_hash,
-        year: 1,
-        status: "active",
-        college: "IIITV",
-      });
-    }
+//     if (!user) {
+//       const password_hash = await bcrypt.hash(googleId + "dummy", 10);
+//       user = await User.create({
+//         name,
+//         email,
+//         password_hash,
+//         year: 1,
+//         status: "active",
+//         college: "IIITV",
+//       });
+//     }
 
-    const token = signToken({ id: user._id, role: user.role });
+//     const token = signToken({ id: user._id, role: user.role });
 
-    res.status(200).json({
-      success: true,
-      data: {
-        token,
-        user: {
-          id: user._id,
-          name: user.name,
-          email: user.email,
-          role: user.role,
-          status: user.status,
-          must_change_password: user.must_change_password,
-        },
-      },
-    });
-  } catch (err) {
-    res.status(500).json({ success: false, message: "OAuth failed" });
-  }
-};
+//     res.status(200).json({
+//       success: true,
+//       data: {
+//         token,
+//         user: {
+//           id: user._id,
+//           name: user.name,
+//           email: user.email,
+//           role: user.role,
+//           status: user.status,
+//           must_change_password: user.must_change_password,
+//         },
+//       },
+//     });
+//   } catch (err) {
+//     res.status(500).json({ success: false, message: "OAuth failed" });
+//   }
+// };
