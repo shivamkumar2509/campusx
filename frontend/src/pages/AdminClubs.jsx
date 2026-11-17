@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   createClub,
@@ -14,6 +14,21 @@ import {
 import api from "../api/axios";
 import PageShell from "../components/common/PageShell";
 import { ErrorState, LoadingBlock } from "../components/common/StateViews";
+
+const extractList = (response, key) => {
+  const payload = response?.data;
+  const candidates = [
+    payload?.[key],
+    payload?.data?.[key],
+    payload?.data,
+    payload,
+  ];
+  return candidates.find(Array.isArray) || [];
+};
+
+const getUserId = (user) => String(user?._id || user?.id || "");
+const getMemberUserId = (member) =>
+  String(member?.user_id?._id || member?.user_id || "");
 
 const TYPES = ["coding", "music", "dance", "drama", "robotics", "arts"];
 
@@ -39,6 +54,21 @@ export default function AdminClubs() {
   const [selectedUser, setSelectedUser] = useState(null);
   const [roleAction, setRoleAction] = useState("secretary");
   const [showRoleDropdown, setShowRoleDropdown] = useState(false);
+
+  const roleDropdownRef = useRef(null);
+  const [assigning, setAssigning] = useState(false);
+  const [studentsLoading, setStudentsLoading] = useState(false);
+
+  useEffect(() => {
+    const handleOutsideClick = (event) => {
+      if (!roleDropdownRef.current?.contains(event.target)) {
+        setShowRoleDropdown(false);
+      }
+    };
+    document.addEventListener("pointerdown", handleOutsideClick);
+    return () =>
+      document.removeEventListener("pointerdown", handleOutsideClick);
+  }, []);
 
   const [saving, setSaving] = useState(false);
   const [actionError, setActionError] = useState("");
@@ -75,6 +105,7 @@ export default function AdminClubs() {
     setClubMembers([]);
     setSelectedUser(null);
     setRoleSearchQuery("");
+    setShowRoleDropdown(false);
   };
 
   const handleEdit = async (club) => {
@@ -91,44 +122,69 @@ export default function AdminClubs() {
     setActionSuccess("");
     setRoleSearchQuery("");
     setSelectedUser(null);
+    setShowRoleDropdown(false);
+    setAllStudents([]);
+    setClubMembers([]);
+    setStudentsLoading(true);
 
-    try {
-      const rolesRes = await fetchClubRoles(club._id);
-      setClubMembers(rolesRes.data.members || []);
+    const [rolesResult, studentsResult] = await Promise.allSettled([
+      fetchClubRoles(club._id),
+      fetchStudents({ limit: 100, role: "student", status: "active" }),
+    ]);
 
-      const studentsRes = await fetchStudents({
-        limit: 100,
-        role: "student",
-        status: "active",
-      });
-      setAllStudents(studentsRes.data || []);
-    } catch (err) {
-      console.error("Failed to load data for edit", err);
+    if (rolesResult.status === "fulfilled") {
+      setClubMembers(extractList(rolesResult.value, "members"));
+    } else {
+      setActionError("Could not load club roles. Please retry.");
+      console.error("Club roles loading failed:", rolesResult.reason);
     }
+    if (studentsResult.status === "fulfilled") {
+      setAllStudents(extractList(studentsResult.value, "students"));
+    } else {
+      setActionError("Could not load students. Please retry.");
+      console.error("Students loading failed:", studentsResult.reason);
+    }
+    setStudentsLoading(false);
   };
 
   const handleAssignRole = async () => {
-    if (!selectedUser || !editing) return;
+    const userId = getUserId(selectedUser);
+    if (!userId || !editing?._id || assigning) {
+      if (!userId) setActionError("Please select a student from the list.");
+      return;
+    }
     setActionError("");
     setActionSuccess("");
+    setAssigning(true);
 
     try {
       if (roleAction === "secretary") {
-        await assignSecretary(editing._id, selectedUser._id);
+        await assignSecretary(editing._id, userId);
       } else {
-        await addCoreMember(editing._id, selectedUser._id);
+        await addCoreMember(editing._id, userId);
       }
       setActionSuccess(
         `${selectedUser.name} is now ${roleAction === "secretary" ? "Secretary" : "Joint Secretary"}!`,
       );
-
-      const res = await fetchClubRoles(editing._id);
-      setClubMembers(res.data.members || []);
-
       setSelectedUser(null);
       setRoleSearchQuery("");
+      setShowRoleDropdown(false);
+      try {
+        const res = await fetchClubRoles(editing._id);
+        setClubMembers(extractList(res, "members"));
+      } catch (refreshError) {
+        console.error("Role assigned, but refresh failed:", refreshError);
+        setActionSuccess(
+          "Role assigned successfully. Refresh the page to see updated leaders.",
+        );
+      }
     } catch (err) {
-      setActionError(err.response?.data?.message || "Failed to assign role");
+      console.error("Role assignment failed:", err);
+      setActionError(
+        err.response?.data?.message || err.message || "Failed to assign role",
+      );
+    } finally {
+      setAssigning(false);
     }
   };
 
@@ -147,7 +203,7 @@ export default function AdminClubs() {
 
       // Turant list refresh karo
       const res = await fetchClubRoles(editing._id);
-      setClubMembers(res.data.members || []);
+      setClubMembers(extractList(res, "members"));
     } catch (err) {
       setActionError(err.response?.data?.message || "Failed to remove role");
     }
@@ -194,12 +250,17 @@ export default function AdminClubs() {
     }
   };
 
-  const filteredStudents = allStudents.filter(
-    (m) =>
-      m.name.toLowerCase().includes(roleSearchQuery.toLowerCase()) ||
-      (m.email &&
-        m.email.toLowerCase().includes(roleSearchQuery.toLowerCase())),
-  );
+  const filteredStudents = allStudents.filter((student) => {
+    const query = roleSearchQuery.trim().toLowerCase();
+    return (
+      String(student.name || "")
+        .toLowerCase()
+        .includes(query) ||
+      String(student.email || "")
+        .toLowerCase()
+        .includes(query)
+    );
+  });
 
   return (
     <PageShell>
@@ -317,7 +378,7 @@ export default function AdminClubs() {
                 </h3>
                 <div className="flex gap-2 items-start">
                   {/* ✅ FIXED SEARCHABLE DROPDOWN */}
-                  <div className="relative flex-1">
+                  <div ref={roleDropdownRef} className="relative flex-1">
                     <input
                       type="text"
                       placeholder="Search active student by name or email..."
@@ -328,38 +389,43 @@ export default function AdminClubs() {
                         setSelectedUser(null);
                       }}
                       onFocus={() => setShowRoleDropdown(true)}
-                      onBlur={() =>
-                        setTimeout(() => setShowRoleDropdown(false), 200)
-                      }
                       className="w-full border rounded-lg px-3 py-2 text-sm"
                     />
                     {showRoleDropdown && (
                       <div className="absolute z-10 w-full mt-1 bg-white border rounded-lg shadow-lg max-h-60 overflow-y-auto">
-                        {filteredStudents.length === 0 ? (
+                        {studentsLoading ? (
+                          <div className="p-3 text-sm text-gray-500">
+                            Loading students...
+                          </div>
+                        ) : filteredStudents.length === 0 ? (
                           <div className="p-3 text-sm text-gray-500">
                             No students found.
                           </div>
                         ) : (
                           filteredStudents.map((s) => {
                             const existingMember = clubMembers.find(
-                              (m) => m.user_id === s._id,
+                              (m) => getMemberUserId(m) === getUserId(s),
                             );
                             return (
                               <div
                                 key={s._id}
+                                onMouseDown={(event) => event.preventDefault()}
                                 onClick={() => {
-                                  if (
-                                    existingMember &&
-                                    existingMember.role === "secretary"
-                                  ) {
-                                    alert(
-                                      "This user is already the Secretary.",
+                                  if (!getUserId(s)) {
+                                    setActionError(
+                                      "Student ID missing in API response.",
                                     );
                                     return;
                                   }
+                                  if (existingMember?.role === roleAction) {
+                                    setActionError(
+                                      "This student already has the selected role.",
+                                    );
+                                    return;
+                                  }
+                                  setActionError("");
                                   setSelectedUser(s);
-                                  // ✅ Sirf naam set hoga ab (Year/Email nahi)
-                                  setRoleSearchQuery(s.name);
+                                  setRoleSearchQuery(s.name || s.email || "");
                                   setShowRoleDropdown(false);
                                 }}
                                 className={`p-3 border-b last:border-0 cursor-pointer flex justify-between items-center ${existingMember ? "bg-indigo-50/50 hover:bg-indigo-50" : "hover:bg-gray-50"}`}
@@ -398,10 +464,12 @@ export default function AdminClubs() {
                   <button
                     type="button"
                     onClick={handleAssignRole}
-                    disabled={!selectedUser}
+                    disabled={
+                      !getUserId(selectedUser) || assigning || studentsLoading
+                    }
                     className="bg-indigo-600 text-white px-5 py-2 rounded-lg text-sm font-semibold disabled:opacity-50"
                   >
-                    Assign
+                    {assigning ? "Assigning..." : "Assign"}
                   </button>
                 </div>
               </div>
@@ -436,7 +504,7 @@ export default function AdminClubs() {
                             </span>
                             <button
                               onClick={() =>
-                                handleRemoveRole(m.user_id, m.role)
+                                handleRemoveRole(getMemberUserId(m), m.role)
                               }
                               className="text-xs border border-red-200 text-red-600 px-3 py-1.5 rounded hover:bg-red-50 font-semibold"
                             >
