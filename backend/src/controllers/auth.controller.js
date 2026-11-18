@@ -15,9 +15,10 @@ exports.signup = async (req, res) => {
 
     const isAdminSignup = role === "admin";
 
-    // ✅ SECURITY CHECK: Ab admin code ke bina koi signup nahi kar sakta
     if (isAdminSignup) {
-      if (admin_code !== "CAMPUSX_ADMIN_2026") {
+      const adminAccessCode = process.env.Admin_Access_code;
+
+      if (!adminAccessCode || admin_code !== adminAccessCode) {
         return res.status(403).json({
           success: false,
           error_code: "INVALID_ADMIN_CODE",
